@@ -1,0 +1,6 @@
+{
+  "name": "Couple's Trading Cards",
+  "description": "A retro pixel-art trading card app for couples with a simulated marketplace and pairing mechanics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
