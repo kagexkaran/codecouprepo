@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Tab, Card, HistoryItem, ActiveCard } from './types';
+import { User, Tab, Card, HistoryItem, ActiveCard, PairRequest } from './types';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
 import { Collection } from './components/Collection';
@@ -10,7 +10,17 @@ import { AuthScreen } from './components/AuthScreen';
 import { Onboarding } from './components/Onboarding';
 import { INITIAL_CARDS, PROFILE_AVATARS } from './data';
 import { supabase, syncUserDataToSupabase, extractUserFromAuth } from './lib/supabase';
-import { LogOut, Cloud, CloudCheck, RefreshCw, Volume2, VolumeX, Flame } from 'lucide-react';
+import { 
+  registerWithPairingDatabase, 
+  fetchPairingStatus, 
+  sendPairRequest, 
+  acceptPairRequest, 
+  declinePairRequest, 
+  cancelPairRequest, 
+  unpairPartners,
+  syncActivityData 
+} from './lib/pairingService';
+import { LogOut, Cloud, CloudCheck, RefreshCw, Volume2, VolumeX, Flame, Heart, Mail } from 'lucide-react';
 import { retroAudio } from './lib/audio';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -60,6 +70,10 @@ export default function App() {
     }
     return DEFAULT_USER;
   });
+
+  const [incomingRequests, setIncomingRequests] = useState<PairRequest[]>([]);
+  const [outgoingRequest, setOutgoingRequest] = useState<PairRequest | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
   // Check existing Supabase session on initial mount
   useEffect(() => {
@@ -134,6 +148,117 @@ export default function App() {
     });
   }, []);
 
+  // Register user profile with pairing store whenever core profile attributes change
+  useEffect(() => {
+    if (user.id && user.name) {
+      registerWithPairingDatabase(user).then(res => {
+        if (res.record?.pairingCode && res.record.pairingCode !== user.pairingCode) {
+          setUser(prev => ({ ...prev, pairingCode: res.record.pairingCode }));
+        }
+        if (res.status) {
+          setIncomingRequests(res.status.incomingRequests || []);
+          setOutgoingRequest(res.status.outgoingRequest || null);
+          if (res.status.isPaired && res.status.partner) {
+            setUser(prev => {
+              const partner = res.status.partner;
+              if (
+                prev.partnerCode !== partner.pairingCode ||
+                prev.partnerStreak !== partner.dailyStreak ||
+                prev.partnerName !== partner.name
+              ) {
+                return {
+                  ...prev,
+                  partnerId: partner.userId,
+                  partnerCode: partner.pairingCode,
+                  partnerName: partner.name,
+                  partnerEmail: partner.email,
+                  partnerGender: partner.gender,
+                  partnerStreak: partner.dailyStreak,
+                  connectedAt: partner.connectedAt || prev.connectedAt || Date.now(),
+                };
+              }
+              return prev;
+            });
+          }
+        }
+      }).catch(err => {
+        console.warn('Pairing store sync error:', err);
+      });
+    }
+  }, [user.id, user.name, user.email, user.gender, user.dailyStreak]);
+
+  // Periodic polling for incoming pair requests & real partner sync
+  useEffect(() => {
+    if (!user.id) return;
+
+    let isMounted = true;
+
+    const pollPairStatus = async () => {
+      try {
+        const status = await fetchPairingStatus(user.id);
+        if (!status || !isMounted) return;
+
+        setIncomingRequests(status.incomingRequests || []);
+        setOutgoingRequest(status.outgoingRequest || null);
+
+        if (status.isPaired && status.partner) {
+          setUser(prev => {
+            const partner = status.partner;
+            const wasUnpaired = !prev.partnerCode;
+            if (
+              wasUnpaired || 
+              prev.partnerCode !== partner.pairingCode ||
+              prev.partnerStreak !== partner.dailyStreak ||
+              prev.partnerName !== partner.name
+            ) {
+              if (wasUnpaired) {
+                retroAudio.playPairSuccess();
+              }
+              const updated: User = {
+                ...prev,
+                partnerId: partner.userId,
+                partnerCode: partner.pairingCode,
+                partnerName: partner.name,
+                partnerEmail: partner.email,
+                partnerGender: partner.gender,
+                partnerStreak: partner.dailyStreak,
+                connectedAt: partner.connectedAt || prev.connectedAt || Date.now(),
+              };
+              triggerCloudSync(updated);
+              return updated;
+            }
+            return prev;
+          });
+        } else if (!status.isPaired && user.partnerCode) {
+          // Partner unlinked
+          setUser(prev => {
+            if (!prev.partnerCode) return prev;
+            const updated: User = {
+              ...prev,
+              partnerId: null,
+              partnerCode: null,
+              partnerName: null,
+              partnerEmail: null,
+              partnerGender: undefined,
+              partnerStreak: undefined,
+              connectedAt: undefined,
+            };
+            triggerCloudSync(updated);
+            return updated;
+          });
+        }
+      } catch (e) {
+        // network hiccups tolerated
+      }
+    };
+
+    const interval = setInterval(pollPairStatus, 3500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [user.id, user.partnerCode, triggerCloudSync]);
+
   const handleAuthenticated = (authUser: any) => {
     const loaded = extractUserFromAuth(authUser, generatePairingCode());
     const merged: User = {
@@ -145,12 +270,14 @@ export default function App() {
     };
     setUser(merged);
     setIsAuthenticated(true);
+    setShowAuthModal(false);
     localStorage.removeItem('retroCardsGuestActive');
     triggerCloudSync(merged);
   };
 
   const handleGuestContinue = () => {
     setIsAuthenticated(true);
+    setShowAuthModal(false);
     localStorage.setItem('retroCardsGuestActive', 'true');
   };
 
@@ -165,17 +292,87 @@ export default function App() {
     });
   };
 
-  const handlePair = (code: string) => {
-    retroAudio.playPairSuccess();
+  const handleSendPairRequest = async (targetCode: string) => {
+    const res = await sendPairRequest(user.id, targetCode);
+    if (res.success && res.status) {
+      setOutgoingRequest(res.status.outgoingRequest || null);
+      setIncomingRequests(res.status.incomingRequests || []);
+      if (res.status.isPaired && res.status.partner) {
+        retroAudio.playPairSuccess();
+        setUser(prev => {
+          const updated: User = {
+            ...prev,
+            partnerId: res.status.partner.userId,
+            partnerCode: res.status.partner.pairingCode,
+            partnerName: res.status.partner.name,
+            partnerEmail: res.status.partner.email,
+            partnerGender: res.status.partner.gender,
+            partnerStreak: res.status.partner.dailyStreak,
+            connectedAt: res.status.partner.connectedAt || Date.now(),
+          };
+          triggerCloudSync(updated);
+          return updated;
+        });
+      }
+    }
+    return res;
+  };
+
+  const handleAcceptPairRequest = async (requestId: string) => {
+    const res = await acceptPairRequest(requestId, user.id);
+    if (res.success && res.partner) {
+      retroAudio.playPairSuccess();
+      setUser(prev => {
+        const updated: User = {
+          ...prev,
+          partnerId: res.partner.userId,
+          partnerCode: res.partner.pairingCode,
+          partnerName: res.partner.name,
+          partnerEmail: res.partner.email,
+          partnerGender: res.partner.gender,
+          partnerStreak: res.partner.dailyStreak,
+          connectedAt: res.partner.connectedAt || Date.now(),
+        };
+        triggerCloudSync(updated);
+        return updated;
+      });
+      setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+    }
+  };
+
+  const handleDeclinePairRequest = async (requestId: string) => {
+    await declinePairRequest(requestId, user.id);
+    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+  };
+
+  const handleCancelPairRequest = async (requestId: string) => {
+    await cancelPairRequest(requestId, user.id);
+    setOutgoingRequest(null);
+  };
+
+  const handleUnpair = async () => {
+    retroAudio.playButtonClick();
+    await unpairPartners(user.id);
     setUser(prev => {
       const updated: User = { 
         ...prev, 
-        partnerCode: code, 
-        connectedAt: Date.now() 
+        partnerId: null,
+        partnerCode: null, 
+        partnerName: null,
+        partnerEmail: null,
+        partnerGender: undefined,
+        partnerStreak: undefined,
+        connectedAt: undefined,
+        activeCards: [],
       };
       triggerCloudSync(updated);
       return updated;
     });
+  };
+
+  const handlePair = (code: string) => {
+    retroAudio.playPairSuccess();
+    handleSendPairRequest(code);
   };
 
   const handleExchange = (cardId: string, coinValue: number) => {
@@ -244,7 +441,7 @@ export default function App() {
     });
   };
 
-  const handleUseCard = (cardId: string) => {
+  const handleUseCard = (cardId: string, selectedOptions?: string[]) => {
     retroAudio.playCardInspect();
     setUser(prev => {
       const currentQty = prev.collection[cardId] || 0;
@@ -260,7 +457,11 @@ export default function App() {
           usedBy: prev.name || 'You',
           usedByUserId: prev.id,
           completed: false,
+          selectedOptions: selectedOptions || [],
         };
+        const optionDetails = selectedOptions && selectedOptions.length > 0
+          ? `Choice: ${selectedOptions.join(' • ')}`
+          : 'Activated couple task effect (24h timer)';
         const historyItem: HistoryItem = {
           id: 'hist_' + startedAt + '_' + Math.random().toString(36).substring(2, 7),
           type: 'use',
@@ -270,7 +471,8 @@ export default function App() {
           cardRarity: cardDef?.rarity,
           timestamp: startedAt,
           userName: prev.name || 'You',
-          details: 'Activated couple task effect (24h timer)',
+          details: optionDetails,
+          selectedOptions: selectedOptions || [],
         };
         const updated: User = {
           ...prev,
@@ -297,12 +499,15 @@ export default function App() {
       // Verification: confirmation can only be done by the user who used the cards
       if (target.usedByUserId && target.usedByUserId !== prev.id) {
         retroAudio.playError();
-        alert(`Only ${target.usedBy || 'the user'} who played this card can confirm task completion!`);
         return prev;
       }
 
       retroAudio.playPairSuccess();
       const cardDef = INITIAL_CARDS.find(c => c.id === target.cardId);
+      const completionDetails = target.selectedOptions && target.selectedOptions.length > 0
+        ? `Completed: ${target.selectedOptions.join(' • ')}`
+        : 'Task completed and verified by creator';
+
       const historyItem: HistoryItem = {
         id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
         type: 'completed',
@@ -312,7 +517,8 @@ export default function App() {
         cardRarity: cardDef?.rarity,
         timestamp: Date.now(),
         userName: prev.name || 'You',
-        details: 'Task completed and verified by creator',
+        details: completionDetails,
+        selectedOptions: target.selectedOptions,
       };
 
       const remainingActive = activeList.filter(a => a.id !== activeCardId && a.cardId !== activeCardId);
@@ -367,20 +573,6 @@ export default function App() {
       }
       return prev;
     });
-  };
-
-  const handleUnpair = () => {
-    setUser(prev => {
-      const updated: User = {
-        ...prev,
-        partnerCode: null,
-        connectedAt: undefined,
-        activeCards: [],
-      };
-      triggerCloudSync(updated);
-      return updated;
-    });
-    if (currentTab === 'couple') setCurrentTab('dashboard');
   };
 
   const handleRefreshShop = () => {
@@ -621,6 +813,45 @@ export default function App() {
         </div>
       </header>
 
+      {/* Global Incoming Request Alert Banner */}
+      {incomingRequests.length > 0 && (
+        <div className="mx-4 mb-4 p-3.5 bg-pink-500 text-black border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-bounce-short">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-black text-pink-400 flex items-center justify-center font-black border-2 border-black shrink-0">
+              💌
+            </div>
+            <div>
+              <p className="font-black uppercase text-sm leading-tight">
+                Pair Request From: <span className="underline">{incomingRequests[0].fromUserName}</span>
+              </p>
+              <p className="text-xs font-mono font-bold text-gray-900">
+                {incomingRequests[0].fromUserEmail} • Code: {incomingRequests[0].fromPairingCode}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => handleAcceptPairRequest(incomingRequests[0].id)}
+              className="px-4 py-1.5 bg-green-400 text-black border-2 border-black font-black uppercase text-xs shadow-[2px_2px_0_rgba(0,0,0,1)] hover:translate-y-px active:shadow-none transition-all cursor-pointer"
+            >
+              Accept & Link
+            </button>
+            <button
+              onClick={() => handleDeclinePairRequest(incomingRequests[0].id)}
+              className="px-3 py-1.5 bg-black text-white border-2 border-black font-black uppercase text-xs hover:bg-gray-800 transition-all cursor-pointer"
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => setCurrentTab('couple')}
+              className="px-3 py-1.5 bg-yellow-300 text-black border-2 border-black font-black uppercase text-xs hover:bg-yellow-400 transition-all cursor-pointer"
+            >
+              View
+            </button>
+          </div>
+        </div>
+      )}
+
       <Navigation currentTab={currentTab} onTabChange={setCurrentTab} hasPartner={!!user.partnerCode} />
 
       <main className="px-4">
@@ -628,6 +859,14 @@ export default function App() {
           {currentTab === 'dashboard' && (
             <Dashboard 
               user={user} 
+              incomingRequests={incomingRequests}
+              outgoingRequest={outgoingRequest}
+              onSendPairRequest={handleSendPairRequest}
+              onAcceptPairRequest={handleAcceptPairRequest}
+              onDeclinePairRequest={handleDeclinePairRequest}
+              onCancelPairRequest={handleCancelPairRequest}
+              onUnpair={handleUnpair}
+              onOpenAuth={() => setShowAuthModal(true)}
               onPair={handlePair} 
               onSelectGender={handleSelectGenderFallback} 
               onClaimDaily={handleClaimDailyLogin} 
@@ -660,12 +899,38 @@ export default function App() {
           {currentTab === 'couple' && (
             <Couple 
               user={user} 
+              incomingRequests={incomingRequests}
+              outgoingRequest={outgoingRequest}
+              onSendPairRequest={handleSendPairRequest}
+              onAcceptPairRequest={handleAcceptPairRequest}
+              onDeclinePairRequest={handleDeclinePairRequest}
+              onCancelPairRequest={handleCancelPairRequest}
+              onUnpair={handleUnpair}
+              onOpenAuth={() => setShowAuthModal(true)}
               onCompleteTask={handleCompleteTask}
               onUpdateActiveCardTime={handleUpdateActiveCardTime}
             />
           )}
         </div>
       </main>
+
+      {/* Auth Modal for Guests connecting their real email */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-md">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute -top-3 -right-3 z-10 bg-red-600 text-black font-black w-8 h-8 border-2 border-black flex items-center justify-center cursor-pointer shadow-[2px_2px_0_rgba(0,0,0,1)] hover:bg-red-500"
+            >
+              ✕
+            </button>
+            <AuthScreen 
+              onAuthenticated={handleAuthenticated} 
+              onGuestContinue={() => setShowAuthModal(false)} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

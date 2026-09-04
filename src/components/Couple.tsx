@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { User, HistoryItem, HistoryEventType, ActiveCard } from '../types';
+import { User, HistoryItem, HistoryEventType, ActiveCard, PairRequest } from '../types';
 import { INITIAL_CARDS, PROFILE_AVATARS } from '../data';
+import { PairingSection } from './PairingSection';
 import { 
   Heart, 
   Clock, 
@@ -16,12 +17,21 @@ import {
   Filter, 
   Flame,
   Calendar,
-  Layers
+  Layers,
+  Mail
 } from 'lucide-react';
 import { retroAudio } from '../lib/audio';
 
 interface CoupleProps {
   user: User;
+  incomingRequests?: PairRequest[];
+  outgoingRequest?: PairRequest | null;
+  onSendPairRequest?: (code: string) => Promise<{ success: boolean; message: string }>;
+  onAcceptPairRequest?: (requestId: string) => Promise<void>;
+  onDeclinePairRequest?: (requestId: string) => Promise<void>;
+  onCancelPairRequest?: (requestId: string) => Promise<void>;
+  onUnpair?: () => Promise<void>;
+  onOpenAuth?: () => void;
   onCompleteTask?: (activeCardId: string) => void;
   onUpdateActiveCardTime?: (activeCardId: string, additionalMs: number) => void;
 }
@@ -30,6 +40,14 @@ const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const Couple: React.FC<CoupleProps> = ({ 
   user, 
+  incomingRequests = [],
+  outgoingRequest = null,
+  onSendPairRequest,
+  onAcceptPairRequest,
+  onDeclinePairRequest,
+  onCancelPairRequest,
+  onUnpair,
+  onOpenAuth,
   onCompleteTask, 
   onUpdateActiveCardTime 
 }) => {
@@ -140,19 +158,70 @@ export const Couple: React.FC<CoupleProps> = ({
           </div>
           
           <div className="space-y-4">
-            <div className="bg-black border-4 border-black p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-gray-400 uppercase font-black text-xs block mb-1">Partner Sync Channel</span>
-                <div className="text-white font-mono font-bold uppercase text-base sm:text-lg select-all flex items-center gap-2">
-                  <span className="bg-[#222233] px-2 py-1 border border-white/20">{user.pairingCode}</span>
-                  <span className="text-pink-500">↔</span>
-                  <span className="bg-[#222233] px-2 py-1 border border-white/20">{user.partnerCode || 'PENDING'}</span>
+            <div className="bg-black border-4 border-black p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <span className="text-gray-400 uppercase font-black text-xs block mb-2">Partner Sync Channel</span>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  {/* Current User */}
+                  <div className="flex items-center gap-2 bg-[#222233] px-3 py-1.5 border-2 border-pink-500 shadow-[2px_2px_0_rgba(0,0,0,1)]">
+                    <span className="text-white font-black uppercase text-sm sm:text-base">
+                      {user.name || 'You'}
+                    </span>
+                    <div className="flex items-center gap-1 bg-black px-2 py-0.5 border border-amber-400 text-amber-400 text-xs font-black">
+                      <Flame size={13} className="fill-amber-400 text-amber-400" />
+                      <span>{user.dailyStreak || 0}d Streak</span>
+                    </div>
+                  </div>
+
+                  <span className="text-pink-500 font-black text-xl select-none animate-pulse">↔</span>
+
+                  {/* Partner User */}
+                  <div className={`flex items-center gap-2 bg-[#222233] px-3 py-1.5 border-2 shadow-[2px_2px_0_rgba(0,0,0,1)] ${
+                    user.partnerCode ? 'border-blue-400' : 'border-dashed border-gray-600'
+                  }`}>
+                    <div className="flex flex-col">
+                      <span className="text-white font-black uppercase text-sm sm:text-base">
+                        {user.partnerName || (user.partnerCode ? 'Partner' : 'Pending Partner')}
+                      </span>
+                      {user.partnerEmail && (
+                        <span className="text-[10px] font-mono text-gray-400 truncate max-w-[150px]">
+                          {user.partnerEmail}
+                        </span>
+                      )}
+                    </div>
+                    {user.partnerCode ? (
+                      <div className="flex items-center gap-1 bg-black px-2 py-0.5 border border-amber-400 text-amber-400 text-xs font-black">
+                        <Flame size={13} className="fill-amber-400 text-amber-400" />
+                        <span>{user.partnerStreak !== undefined ? user.partnerStreak : 0}d Streak</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-gray-400 font-bold uppercase bg-black px-1.5 py-0.5">
+                        Awaiting Link
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Subtext info for pairing code */}
+                <div className="mt-2 text-[11px] font-mono text-gray-400 uppercase flex items-center gap-2 flex-wrap">
+                  <span>Pairing ID: <strong className="text-gray-200">{user.pairingCode}</strong></span>
+                  {user.partnerCode && (
+                    <span>• Partner ID: <strong className="text-green-400">{user.partnerCode}</strong></span>
+                  )}
+                  {user.partnerGender && (
+                    <span>• Partner Deck: <strong className="text-blue-400 uppercase">{user.partnerGender}</strong></span>
+                  )}
                 </div>
               </div>
-              <div className="text-right flex flex-col items-start sm:items-end">
+
+              <div className="text-right flex flex-col items-start sm:items-end shrink-0">
                 <span className="text-gray-400 uppercase font-black text-xs">Connection Health</span>
-                <span className="text-xs font-black uppercase text-emerald-400 bg-emerald-950/80 px-2 py-0.5 border border-emerald-600 mt-1">
-                  ● SYNC ACTIVE
+                <span className={`text-xs font-black uppercase px-2 py-0.5 border mt-1 ${
+                  user.partnerCode 
+                    ? 'text-emerald-400 bg-emerald-950/80 border-emerald-600' 
+                    : 'text-yellow-400 bg-yellow-950/80 border-yellow-600'
+                }`}>
+                  ● {user.partnerCode ? 'SYNC ACTIVE' : 'AWAITING PAIR'}
                 </span>
               </div>
             </div>
@@ -176,7 +245,7 @@ export const Couple: React.FC<CoupleProps> = ({
           </div>
         </div>
 
-        {/* Quick Partner Avatars Card */}
+        {/* Quick Partner Avatars Card - Displays Real Users */}
         <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between">
           <div>
             <h3 className="text-xl font-black uppercase text-white mb-3 flex items-center gap-2">
@@ -189,35 +258,72 @@ export const Couple: React.FC<CoupleProps> = ({
           </div>
 
           <div className="flex items-center justify-around bg-black border-4 border-black p-4">
+            {/* You */}
             <div className="flex flex-col items-center">
-              <div className="w-14 h-14 border-2 border-black overflow-hidden bg-blue-600 mb-1.5 shadow-[2px_2px_0_rgba(0,0,0,1)]">
+              <div className={`w-14 h-14 border-2 border-black overflow-hidden mb-1.5 shadow-[2px_2px_0_rgba(0,0,0,1)] ${
+                user.gender === 'male' ? 'bg-blue-600' : 'bg-pink-600'
+              }`}>
                 <img 
-                  src={PROFILE_AVATARS.male} 
-                  alt="Male Partner" 
+                  src={user.gender === 'female' ? PROFILE_AVATARS.female : PROFILE_AVATARS.male} 
+                  alt="You" 
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover" 
                 />
               </div>
-              <span className="text-[10px] font-black uppercase text-blue-400">Male User</span>
+              <span className="text-[10px] font-black uppercase text-white text-center max-w-[84px] truncate">
+                {user.name || 'You'}
+              </span>
+              <span className="text-[9px] font-mono text-gray-400 uppercase">
+                {user.gender || 'starter'}
+              </span>
             </div>
 
-            <Heart className="w-6 h-6 text-pink-500 fill-pink-500 animate-bounce mx-2 shrink-0" />
+            <Heart className={`w-6 h-6 mx-2 shrink-0 ${
+              user.partnerCode ? 'text-pink-500 fill-pink-500 animate-bounce' : 'text-gray-600'
+            }`} />
 
+            {/* Real Partner */}
             <div className="flex flex-col items-center">
-              <div className="w-14 h-14 border-2 border-black overflow-hidden bg-pink-600 mb-1.5 shadow-[2px_2px_0_rgba(0,0,0,1)]">
-                <img 
-                  src={PROFILE_AVATARS.female} 
-                  alt="Female Partner" 
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover" 
-                />
+              <div className={`w-14 h-14 border-2 border-black overflow-hidden mb-1.5 shadow-[2px_2px_0_rgba(0,0,0,1)] flex items-center justify-center ${
+                user.partnerGender === 'male' ? 'bg-blue-600' : user.partnerGender === 'female' ? 'bg-pink-600' : 'bg-gray-800'
+              }`}>
+                {user.partnerCode ? (
+                  <img 
+                    src={user.partnerGender === 'female' ? PROFILE_AVATARS.female : PROFILE_AVATARS.male} 
+                    alt="Partner" 
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <span className="text-xl font-black text-gray-500">?</span>
+                )}
               </div>
-              <span className="text-[10px] font-black uppercase text-pink-400">Female User</span>
+              <span className="text-[10px] font-black uppercase text-center max-w-[84px] truncate text-pink-400">
+                {user.partnerName || (user.partnerCode ? 'Partner' : 'Pending')}
+              </span>
+              <span className="text-[9px] font-mono text-gray-400 uppercase">
+                {user.partnerCode ? (user.partnerGender || 'Deck') : 'Unlinked'}
+              </span>
             </div>
           </div>
         </div>
 
       </div>
+
+      {/* If Not Paired or has incoming requests, show Pairing Section right here on Couple tab */}
+      {(!user.partnerCode || incomingRequests.length > 0 || outgoingRequest) && (
+        <PairingSection
+          user={user}
+          incomingRequests={incomingRequests}
+          outgoingRequest={outgoingRequest}
+          onSendPairRequest={onSendPairRequest || (async () => ({ success: false, message: '' }))}
+          onAcceptPairRequest={onAcceptPairRequest || (async () => {})}
+          onDeclinePairRequest={onDeclinePairRequest || (async () => {})}
+          onCancelPairRequest={onCancelPairRequest || (async () => {})}
+          onUnpair={onUnpair || (async () => {})}
+          onOpenAuth={onOpenAuth}
+        />
+      )}
 
       {/* Middle Section: Active Effects with Complete Task Button & Time Adjustment */}
       <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -309,6 +415,26 @@ export const Couple: React.FC<CoupleProps> = ({
                           </span>
                         )}
                       </div>
+
+                      {/* Selected Card Options / Objectives */}
+                      {ac.selectedOptions && ac.selectedOptions.length > 0 && (
+                        <div className="mt-2.5 bg-[#181824] border-2 border-yellow-500/40 p-2 shadow-[2px_2px_0_rgba(0,0,0,1)]">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Sparkles size={11} className="text-yellow-400" />
+                            <span className="text-[10px] font-black uppercase text-yellow-400 tracking-wider">
+                              Selected Effect Task{ac.selectedOptions.length > 1 ? 's' : ''}:
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {ac.selectedOptions.map((opt, optIdx) => (
+                              <div key={optIdx} className="flex items-start gap-1.5 text-xs text-white uppercase font-bold">
+                                <span className="text-yellow-400 font-black">▶</span>
+                                <span>{opt}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -473,6 +599,15 @@ export const Couple: React.FC<CoupleProps> = ({
                       <p className="text-xs text-gray-400 uppercase mt-0.5">
                         {item.details || 'Card activity recorded'}
                       </p>
+                      {item.selectedOptions && item.selectedOptions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.selectedOptions.map((opt, oIdx) => (
+                            <span key={oIdx} className="text-[9px] font-black uppercase text-yellow-300 bg-yellow-950/60 border border-yellow-500/40 px-1.5 py-0.5">
+                              ★ {opt}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 

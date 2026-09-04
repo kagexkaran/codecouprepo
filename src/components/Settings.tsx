@@ -124,10 +124,22 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* Partnership Status */}
         <div className="flex flex-col">
           <label className="uppercase font-black text-xs mb-2 text-gray-400">Partnership Status</label>
-          <div className="bg-[#1a1a2e] border-4 border-black p-4 flex justify-between items-center">
-            <span className={`font-black uppercase ${user.partnerCode ? 'text-green-400' : 'text-yellow-400'}`}>
-              {user.partnerCode ? `PAIRED: ${user.partnerCode}` : 'UNPAIRED'}
-            </span>
+          <div className="bg-[#1a1a2e] border-4 border-black p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <span className={`font-black uppercase block text-sm sm:text-base ${user.partnerCode ? 'text-green-400' : 'text-yellow-400'}`}>
+                {user.partnerCode ? `PAIRED WITH: ${user.partnerName || user.partnerCode}` : 'UNPAIRED'}
+              </span>
+              {user.partnerEmail && (
+                <span className="text-[11px] font-mono text-gray-400 block mt-0.5">
+                  Partner Email: <strong className="text-gray-200">{user.partnerEmail}</strong>
+                </span>
+              )}
+              {user.partnerStreak !== undefined && (
+                <span className="text-[11px] font-mono text-amber-400 block mt-0.5 font-bold">
+                  Partner Streak: {user.partnerStreak} days
+                </span>
+              )}
+            </div>
             {user.partnerCode && (
               <button 
                 onClick={() => {
@@ -136,7 +148,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 }}
                 className="px-4 py-2 bg-red-600 text-black font-black uppercase border-2 border-black hover:bg-red-500 shadow-[2px_2px_0_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
               >
-                Unlink
+                Unlink Partner
               </button>
             )}
           </div>

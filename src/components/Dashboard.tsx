@@ -1,29 +1,40 @@
 import React, { useState } from 'react';
-import { User, Card, Rarity } from '../types';
+import { User, Card, Rarity, PairRequest } from '../types';
 import { Coins, Heart, Users, Calendar, Flame, CheckCircle, ShieldAlert } from 'lucide-react';
 import { INITIAL_CARDS, PROFILE_AVATARS } from '../data';
 import { retroAudio } from '../lib/audio';
+import { PairingSection } from './PairingSection';
 
 interface DashboardProps {
   user: User;
-  onPair: (code: string) => void;
+  incomingRequests?: PairRequest[];
+  outgoingRequest?: PairRequest | null;
+  onSendPairRequest?: (code: string) => Promise<{ success: boolean; message: string }>;
+  onAcceptPairRequest?: (requestId: string) => Promise<void>;
+  onDeclinePairRequest?: (requestId: string) => Promise<void>;
+  onCancelPairRequest?: (requestId: string) => Promise<void>;
+  onUnpair?: () => Promise<void>;
+  onOpenAuth?: () => void;
+  onPair?: (code: string) => void;
   onSelectGender: (gender: 'male' | 'female') => void;
   onClaimDaily: (cards: Card[], coins: number) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGender, onClaimDaily }) => {
-  const [partnerCodeInput, setPartnerCodeInput] = useState('');
+export const Dashboard: React.FC<DashboardProps> = ({ 
+  user, 
+  incomingRequests = [],
+  outgoingRequest = null,
+  onSendPairRequest,
+  onAcceptPairRequest,
+  onDeclinePairRequest,
+  onCancelPairRequest,
+  onUnpair,
+  onOpenAuth,
+  onPair, 
+  onSelectGender, 
+  onClaimDaily 
+}) => {
   const [rewardNotification, setRewardNotification] = useState<string | null>(null);
-
-  const handlePair = () => {
-    if (partnerCodeInput.trim()) {
-      retroAudio.playPairSuccess();
-      onPair(partnerCodeInput.trim());
-      setPartnerCodeInput('');
-    } else {
-      retroAudio.playError();
-    }
-  };
 
   const currentDay = (user.dailyLoginCount || 0) + 1;
   const canClaim = !user.dailyLoginLastClaim || (Date.now() - user.dailyLoginLastClaim > 24 * 60 * 60 * 1000);
@@ -172,42 +183,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
       </div>
 
       {/* Pairing Section */}
-      <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-        <h2 className="text-3xl font-black uppercase mb-4 text-green-400">Pairing Status</h2>
-        
-        {user.partnerCode ? (
-          <div className="space-y-4">
-            <p className="text-sm uppercase leading-relaxed text-gray-300">Connected with your partner to share your collection and earn daily login bonuses!</p>
-            <div className="flex items-center justify-center p-6 bg-black border-4 border-black overflow-hidden relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <Heart className="text-pink-500 w-12 h-12 animate-pulse mr-4 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-green-400 uppercase font-black text-xl truncate">PAIRED ACTIVE</p>
-                <p className="text-sm text-gray-400 uppercase truncate">Code: {user.partnerCode}</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm uppercase leading-relaxed text-gray-300">Connect with your partner to share your collection and earn daily login bonuses!</p>
-            <div className="flex space-x-2">
-              <input 
-                type="text" 
-                placeholder="ENTER CODE..." 
-                value={partnerCodeInput}
-                onChange={(e) => setPartnerCodeInput(e.target.value)}
-                className="flex-1 bg-black border-4 border-black p-2 text-white placeholder-gray-600 focus:outline-none uppercase font-bold w-full min-w-0"
-              />
-              <button 
-                onClick={handlePair}
-                className="px-6 py-2 bg-pink-500 text-black border-4 border-black font-bold uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Pair
-              </button>
-            </div>
-            <p className="text-xs text-pink-400 uppercase font-bold italic truncate">Status: Waiting for partner code...</p>
-          </div>
-        )}
+      <div className="w-full">
+        <PairingSection
+          user={user}
+          incomingRequests={incomingRequests}
+          outgoingRequest={outgoingRequest}
+          onSendPairRequest={onSendPairRequest || (async (code) => {
+            if (onPair) onPair(code);
+            return { success: true, message: 'Pairing updated.' };
+          })}
+          onAcceptPairRequest={onAcceptPairRequest || (async () => {})}
+          onDeclinePairRequest={onDeclinePairRequest || (async () => {})}
+          onCancelPairRequest={onCancelPairRequest || (async () => {})}
+          onUnpair={onUnpair || (async () => {})}
+          onOpenAuth={onOpenAuth}
+        />
       </div>
 
       {/* Daily Login Section */}

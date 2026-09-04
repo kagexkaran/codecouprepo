@@ -8,6 +8,7 @@ export interface Card {
   description: string;
   imageUrl?: string;
   price: number;
+  options?: string[];
 }
 
 export type HistoryEventType = 'use' | 'purchase' | 'trade' | 'completed';
@@ -22,6 +23,7 @@ export interface HistoryItem {
   timestamp: number;
   userName: string;
   details?: string;
+  selectedOptions?: string[];
 }
 
 export interface ActiveCard {
@@ -33,6 +35,7 @@ export interface ActiveCard {
   usedByUserId: string;
   completed?: boolean;
   completedAt?: number;
+  selectedOptions?: string[];
 }
 
 export interface User {
@@ -54,7 +57,27 @@ export interface User {
   dailyLoginCount?: number;
   dailyLoginLastClaim?: number;
   dailyStreak?: number;
+  partnerId?: string | null;
+  partnerEmail?: string | null;
+  partnerName?: string | null;
+  partnerGender?: 'male' | 'female';
+  partnerStreak?: number;
   history?: HistoryItem[];
+}
+
+export interface PairRequest {
+  id: string;
+  fromUserId: string;
+  fromEmail: string;
+  fromName: string;
+  fromGender?: 'male' | 'female';
+  fromCode: string;
+  toUserId: string;
+  toEmail: string;
+  toName: string;
+  toCode: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  createdAt: number;
 }
 
 export type Tab = 'dashboard' | 'collection' | 'shop' | 'settings' | 'couple';
