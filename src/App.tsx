@@ -10,16 +10,7 @@ import { AuthScreen } from './components/AuthScreen';
 import { Onboarding } from './components/Onboarding';
 import { INITIAL_CARDS, PROFILE_AVATARS } from './data';
 import { supabase, syncUserDataToSupabase, extractUserFromAuth } from './lib/supabase';
-import { 
-  registerWithPairingDatabase, 
-  fetchPairingStatus, 
-  sendPairRequest, 
-  acceptPairRequest, 
-  declinePairRequest, 
-  cancelPairRequest, 
-  unpairPartners,
-  syncActivityData 
-} from './lib/pairingService';
+import { usePairingSync } from './lib/usePairingSync';
 import { LogOut, Cloud, CloudCheck, RefreshCw, Volume2, VolumeX, Flame, Heart, Mail } from 'lucide-react';
 import { retroAudio } from './lib/audio';
 
@@ -71,8 +62,6 @@ export default function App() {
     return DEFAULT_USER;
   });
 
-  const [incomingRequests, setIncomingRequests] = useState<PairRequest[]>([]);
-  const [outgoingRequest, setOutgoingRequest] = useState<PairRequest | null>(null);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
   // Check existing Supabase session on initial mount
@@ -140,124 +129,16 @@ export default function App() {
     localStorage.setItem('retroCardsUser', JSON.stringify(user));
   }, [user]);
 
-  // Debounced cloud sync to Supabase
-  const triggerCloudSync = useCallback((updatedUser: User) => {
-    setSyncStatus('syncing');
-    syncUserDataToSupabase(updatedUser).then(success => {
-      setSyncStatus(success ? 'synced' : 'offline');
-    });
-  }, []);
-
-  // Register user profile with pairing store whenever core profile attributes change
-  useEffect(() => {
-    if (user.id && user.name) {
-      registerWithPairingDatabase(user).then(res => {
-        if (res.record?.pairingCode && res.record.pairingCode !== user.pairingCode) {
-          setUser(prev => ({ ...prev, pairingCode: res.record.pairingCode }));
-        }
-        if (res.status) {
-          setIncomingRequests(res.status.incomingRequests || []);
-          setOutgoingRequest(res.status.outgoingRequest || null);
-          if (res.status.isPaired && res.status.partner) {
-            setUser(prev => {
-              const partner = res.status.partner;
-              if (
-                prev.partnerCode !== partner.pairingCode ||
-                prev.partnerStreak !== partner.dailyStreak ||
-                prev.partnerName !== partner.name
-              ) {
-                return {
-                  ...prev,
-                  partnerId: partner.userId,
-                  partnerCode: partner.pairingCode,
-                  partnerName: partner.name,
-                  partnerEmail: partner.email,
-                  partnerGender: partner.gender,
-                  partnerStreak: partner.dailyStreak,
-                  connectedAt: partner.connectedAt || prev.connectedAt || Date.now(),
-                };
-              }
-              return prev;
-            });
-          }
-        }
-      }).catch(err => {
-        console.warn('Pairing store sync error:', err);
-      });
-    }
-  }, [user.id, user.name, user.email, user.gender, user.dailyStreak]);
-
-  // Periodic polling for incoming pair requests & real partner sync
-  useEffect(() => {
-    if (!user.id) return;
-
-    let isMounted = true;
-
-    const pollPairStatus = async () => {
-      try {
-        const status = await fetchPairingStatus(user.id);
-        if (!status || !isMounted) return;
-
-        setIncomingRequests(status.incomingRequests || []);
-        setOutgoingRequest(status.outgoingRequest || null);
-
-        if (status.isPaired && status.partner) {
-          setUser(prev => {
-            const partner = status.partner;
-            const wasUnpaired = !prev.partnerCode;
-            if (
-              wasUnpaired || 
-              prev.partnerCode !== partner.pairingCode ||
-              prev.partnerStreak !== partner.dailyStreak ||
-              prev.partnerName !== partner.name
-            ) {
-              if (wasUnpaired) {
-                retroAudio.playPairSuccess();
-              }
-              const updated: User = {
-                ...prev,
-                partnerId: partner.userId,
-                partnerCode: partner.pairingCode,
-                partnerName: partner.name,
-                partnerEmail: partner.email,
-                partnerGender: partner.gender,
-                partnerStreak: partner.dailyStreak,
-                connectedAt: partner.connectedAt || prev.connectedAt || Date.now(),
-              };
-              triggerCloudSync(updated);
-              return updated;
-            }
-            return prev;
-          });
-        } else if (!status.isPaired && user.partnerCode) {
-          // Partner unlinked
-          setUser(prev => {
-            if (!prev.partnerCode) return prev;
-            const updated: User = {
-              ...prev,
-              partnerId: null,
-              partnerCode: null,
-              partnerName: null,
-              partnerEmail: null,
-              partnerGender: undefined,
-              partnerStreak: undefined,
-              connectedAt: undefined,
-            };
-            triggerCloudSync(updated);
-            return updated;
-          });
-        }
-      } catch (e) {
-        // network hiccups tolerated
-      }
-    };
-
-    const interval = setInterval(pollPairStatus, 3500);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [user.id, user.partnerCode, triggerCloudSync]);
+  const {
+    incomingRequests,
+    outgoingRequest,
+    sendPairRequest,
+    acceptPairRequest: handleAcceptPairRequest,
+    declinePairRequest: handleDeclinePairRequest,
+    cancelPairRequest: handleCancelPairRequest,
+    unpairPartners: handleUnpair,
+    triggerCloudSync
+  } = usePairingSync(user, setUser, isAuthenticated);
 
   const handleAuthenticated = (authUser: any) => {
     const loaded = extractUserFromAuth(authUser, generatePairingCode());
@@ -292,87 +173,14 @@ export default function App() {
     });
   };
 
-  const handleSendPairRequest = async (targetCode: string) => {
-    const res = await sendPairRequest(user.id, targetCode);
-    if (res.success && res.status) {
-      setOutgoingRequest(res.status.outgoingRequest || null);
-      setIncomingRequests(res.status.incomingRequests || []);
-      if (res.status.isPaired && res.status.partner) {
-        retroAudio.playPairSuccess();
-        setUser(prev => {
-          const updated: User = {
-            ...prev,
-            partnerId: res.status.partner.userId,
-            partnerCode: res.status.partner.pairingCode,
-            partnerName: res.status.partner.name,
-            partnerEmail: res.status.partner.email,
-            partnerGender: res.status.partner.gender,
-            partnerStreak: res.status.partner.dailyStreak,
-            connectedAt: res.status.partner.connectedAt || Date.now(),
-          };
-          triggerCloudSync(updated);
-          return updated;
-        });
-      }
-    }
-    return res;
-  };
-
-  const handleAcceptPairRequest = async (requestId: string) => {
-    const res = await acceptPairRequest(requestId, user.id);
-    if (res.success && res.partner) {
-      retroAudio.playPairSuccess();
-      setUser(prev => {
-        const updated: User = {
-          ...prev,
-          partnerId: res.partner.userId,
-          partnerCode: res.partner.pairingCode,
-          partnerName: res.partner.name,
-          partnerEmail: res.partner.email,
-          partnerGender: res.partner.gender,
-          partnerStreak: res.partner.dailyStreak,
-          connectedAt: res.partner.connectedAt || Date.now(),
-        };
-        triggerCloudSync(updated);
-        return updated;
-      });
-      setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
-    }
-  };
-
-  const handleDeclinePairRequest = async (requestId: string) => {
-    await declinePairRequest(requestId, user.id);
-    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
-  };
-
-  const handleCancelPairRequest = async (requestId: string) => {
-    await cancelPairRequest(requestId, user.id);
-    setOutgoingRequest(null);
-  };
-
-  const handleUnpair = async () => {
+  const handleUnpairAction = async () => {
     retroAudio.playButtonClick();
-    await unpairPartners(user.id);
-    setUser(prev => {
-      const updated: User = { 
-        ...prev, 
-        partnerId: null,
-        partnerCode: null, 
-        partnerName: null,
-        partnerEmail: null,
-        partnerGender: undefined,
-        partnerStreak: undefined,
-        connectedAt: undefined,
-        activeCards: [],
-      };
-      triggerCloudSync(updated);
-      return updated;
-    });
+    await handleUnpair();
   };
 
   const handlePair = (code: string) => {
     retroAudio.playPairSuccess();
-    handleSendPairRequest(code);
+    sendPairRequest(code);
   };
 
   const handleExchange = (cardId: string, coinValue: number) => {
@@ -822,10 +630,10 @@ export default function App() {
             </div>
             <div>
               <p className="font-black uppercase text-sm leading-tight">
-                Pair Request From: <span className="underline">{incomingRequests[0].fromUserName}</span>
+                Pair Request From: <span className="underline">{incomingRequests[0].fromName}</span>
               </p>
               <p className="text-xs font-mono font-bold text-gray-900">
-                {incomingRequests[0].fromUserEmail} • Code: {incomingRequests[0].fromPairingCode}
+                {incomingRequests[0].fromEmail} • Code: {incomingRequests[0].fromCode}
               </p>
             </div>
           </div>
@@ -861,11 +669,11 @@ export default function App() {
               user={user} 
               incomingRequests={incomingRequests}
               outgoingRequest={outgoingRequest}
-              onSendPairRequest={handleSendPairRequest}
+              onSendPairRequest={sendPairRequest}
               onAcceptPairRequest={handleAcceptPairRequest}
               onDeclinePairRequest={handleDeclinePairRequest}
               onCancelPairRequest={handleCancelPairRequest}
-              onUnpair={handleUnpair}
+              onUnpair={handleUnpairAction}
               onOpenAuth={() => setShowAuthModal(true)}
               onPair={handlePair} 
               onSelectGender={handleSelectGenderFallback} 
@@ -892,7 +700,7 @@ export default function App() {
               user={user} 
               onUpdateUsername={handleUpdateUsername}
               onResetData={handleReset} 
-              onUnpair={handleUnpair}
+              onUnpair={handleUnpairAction}
               onLogout={handleLogout}
             />
           )}
@@ -901,11 +709,11 @@ export default function App() {
               user={user} 
               incomingRequests={incomingRequests}
               outgoingRequest={outgoingRequest}
-              onSendPairRequest={handleSendPairRequest}
+              onSendPairRequest={sendPairRequest}
               onAcceptPairRequest={handleAcceptPairRequest}
               onDeclinePairRequest={handleDeclinePairRequest}
               onCancelPairRequest={handleCancelPairRequest}
-              onUnpair={handleUnpair}
+              onUnpair={handleUnpairAction}
               onOpenAuth={() => setShowAuthModal(true)}
               onCompleteTask={handleCompleteTask}
               onUpdateActiveCardTime={handleUpdateActiveCardTime}
