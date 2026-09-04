@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { LogOut, Database, Save, CheckCircle2 } from 'lucide-react';
+import { LogOut, Database, Save, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
 import { SUPABASE_PROJECT_ID, BUCKET_NAME } from '../lib/supabase';
+import { retroAudio } from '../lib/audio';
 
 interface SettingsProps {
   user: User;
@@ -20,13 +21,25 @@ export const Settings: React.FC<SettingsProps> = ({
 }) => {
   const [nameInput, setNameInput] = useState(user.name);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isMuted, setIsMuted] = useState(retroAudio.getMuted());
 
   const handleSaveName = (e: React.FormEvent) => {
     e.preventDefault();
     if (nameInput.trim()) {
+      retroAudio.playButtonClick();
       onUpdateUsername(nameInput.trim());
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
+    } else {
+      retroAudio.playError();
+    }
+  };
+
+  const handleToggleSound = () => {
+    const muted = retroAudio.toggleMute();
+    setIsMuted(muted);
+    if (!muted) {
+      retroAudio.playPurchase();
     }
   };
 
@@ -35,6 +48,29 @@ export const Settings: React.FC<SettingsProps> = ({
       <h2 className="text-4xl font-black uppercase mb-8 text-white border-b-4 border-black pb-4">System Config</h2>
       
       <div className="space-y-8">
+        {/* Retro 8-Bit Sound Settings */}
+        <div className="bg-[#1a1a2e] border-4 border-black p-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            {isMuted ? <VolumeX className="text-red-400" size={24} /> : <Volume2 className="text-yellow-400 animate-pulse" size={24} />}
+            <div>
+              <p className="text-white font-black uppercase text-sm">8-Bit Retro Sound Effects</p>
+              <p className="text-gray-400 text-xs font-bold uppercase">
+                {isMuted ? 'Muted (Audio Off)' : 'Active (Chiptune Synthesizer ON)'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleToggleSound}
+            className={`px-4 py-2 border-2 border-black font-black uppercase text-xs transition-all cursor-pointer ${
+              isMuted
+                ? 'bg-gray-600 text-white hover:bg-gray-500'
+                : 'bg-yellow-400 text-black hover:bg-yellow-300 shadow-[2px_2px_0_rgba(0,0,0,1)]'
+            }`}
+          >
+            {isMuted ? 'UNMUTE' : 'MUTE'}
+          </button>
+        </div>
+
         {/* Supabase Connection Details */}
         <div className="bg-[#1a1a2e] border-4 border-black p-4 space-y-3">
           <div className="flex items-center gap-2 text-emerald-400 font-black uppercase text-sm">
@@ -94,7 +130,10 @@ export const Settings: React.FC<SettingsProps> = ({
             </span>
             {user.partnerCode && (
               <button 
-                onClick={onUnpair}
+                onClick={() => {
+                  retroAudio.playButtonClick();
+                  onUnpair();
+                }}
                 className="px-4 py-2 bg-red-600 text-black font-black uppercase border-2 border-black hover:bg-red-500 shadow-[2px_2px_0_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
               >
                 Unlink
@@ -106,7 +145,10 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* Logout & Reset Buttons */}
         <div className="pt-6 border-t-4 border-black space-y-4">
           <button 
-            onClick={onLogout}
+            onClick={() => {
+              retroAudio.playButtonClick();
+              onLogout();
+            }}
             className="w-full py-3 bg-yellow-400 text-black border-4 border-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogOut size={18} />
@@ -114,7 +156,10 @@ export const Settings: React.FC<SettingsProps> = ({
           </button>
 
           <button 
-            onClick={onResetData}
+            onClick={() => {
+              retroAudio.playButtonClick();
+              onResetData();
+            }}
             className="w-full py-3 bg-red-600 text-black border-4 border-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all cursor-pointer"
           >
             Purge Memory (Reset Local Data)

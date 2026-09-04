@@ -1,24 +1,135 @@
 import { Card } from './types';
-import { getCardImageUrl } from './lib/supabase';
 
 export const INITIAL_CARDS: Card[] = [
   // Male Cards
-  { id: 'm_game', name: 'Game night', category: 'male', rarity: 'Common', description: "Let's play a game!", price: 10, imageUrl: getCardImageUrl('male', 'GameCard.png') },
-  { id: 'm_sleep', name: 'Sleep in', category: 'male', rarity: 'Common', description: 'Time for sleep!', price: 10, imageUrl: getCardImageUrl('male', 'Sleep card.png') },
-  { id: 'm_peace', name: 'peace', category: 'male', rarity: 'Rare', description: 'Silence settles all!', price: 30, imageUrl: getCardImageUrl('male', 'Peace card.png') },
-  { id: 'm_18plus', name: '18+ card', category: 'male', rarity: 'Epic', description: 'Time for breakfast!', price: 100, imageUrl: getCardImageUrl('male', '18+ card.png') },
-  { id: 'm_surprise', name: 'surprise card', category: 'male', rarity: 'Legendary', description: 'Give me something!', price: 300, imageUrl: getCardImageUrl('male', 'Suprise card.png') },
-  { id: 'm_anything', name: 'Anything', category: 'male', rarity: 'Mythic', description: 'Four wishes included!', price: 1000, imageUrl: getCardImageUrl('male', 'Anything card.png') },
-  { id: 'm_special', name: 'Cash (special)', category: 'male', rarity: 'Special', description: 'Cash', price: 10000, imageUrl: getCardImageUrl('male', 'Cash Card.png') },
+  { 
+    id: 'm_game', 
+    name: 'Game night', 
+    category: 'male', 
+    rarity: 'Common', 
+    description: "Let's play a game!", 
+    price: 10, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/GAME%20CARD%20(M).png' 
+  },
+  { 
+    id: 'm_sleep', 
+    name: 'Sleep in', 
+    category: 'male', 
+    rarity: 'Common', 
+    description: 'Time for sleep!', 
+    price: 10, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/SLEEP%20CARD%20(M).png' 
+  },
+  { 
+    id: 'm_peace', 
+    name: 'peace', 
+    category: 'male', 
+    rarity: 'Rare', 
+    description: 'Silence settles all!', 
+    price: 30, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/PEACE%20CARD%20(M).png' 
+  },
+  { 
+    id: 'm_18plus', 
+    name: '18+ card', 
+    category: 'male', 
+    rarity: 'Epic', 
+    description: 'Time for breakfast!', 
+    price: 100, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/18+%20CARD.png' 
+  },
+  { 
+    id: 'm_surprise', 
+    name: 'surprise card', 
+    category: 'male', 
+    rarity: 'Legendary', 
+    description: 'Give me something!', 
+    price: 300, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/SUPRISE%20CARD%20(M).png' 
+  },
+  { 
+    id: 'm_anything', 
+    name: 'Anything', 
+    category: 'male', 
+    rarity: 'Mythic', 
+    description: 'Four wishes included!', 
+    price: 1000, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/ANYTHING%20CARD%20(M).png' 
+  },
+  { 
+    id: 'm_special', 
+    name: 'Cash (special)', 
+    category: 'male', 
+    rarity: 'Special', 
+    description: 'Cash', 
+    price: 10000, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/CASH%20CARD%20(M).png' 
+  },
   
   // Female Cards
-  { id: 'f_game', name: 'Game night', category: 'female', rarity: 'Common', description: "Let's play a game!", price: 10, imageUrl: getCardImageUrl('female', 'GameCard.png') },
-  { id: 'f_sleep', name: 'Sleep in', category: 'female', rarity: 'Common', description: 'Time for sleep!', price: 10, imageUrl: getCardImageUrl('female', 'Sleep card.png') },
-  { id: 'f_peace', name: 'peace', category: 'female', rarity: 'Rare', description: 'Silence settles all!', price: 30, imageUrl: getCardImageUrl('female', 'Peace card.png') },
-  { id: 'f_18plus', name: '18+ card', category: 'female', rarity: 'Epic', description: 'Time for breakfast!', price: 100, imageUrl: getCardImageUrl('female', '18+ card.png') },
-  { id: 'f_surprise', name: 'surprise card', category: 'female', rarity: 'Legendary', description: 'Give me something!', price: 300, imageUrl: getCardImageUrl('female', 'Suprise card.png') },
-  { id: 'f_anything', name: 'Anything', category: 'female', rarity: 'Mythic', description: 'Four wishes included!', price: 1000, imageUrl: getCardImageUrl('female', 'Anything card.png') },
-  { id: 'f_special', name: 'Cash (special)', category: 'female', rarity: 'Special', description: 'Cash', price: 10000, imageUrl: getCardImageUrl('female', 'Cash Card.png') },
+  { 
+    id: 'f_game', 
+    name: 'Game night', 
+    category: 'female', 
+    rarity: 'Common', 
+    description: "Let's play a game!", 
+    price: 10, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/GAME%20CARD%20(F).png' 
+  },
+  { 
+    id: 'f_sleep', 
+    name: 'Sleep in', 
+    category: 'female', 
+    rarity: 'Common', 
+    description: 'Time for sleep!', 
+    price: 10, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/SLEEP%20CARD%20(F).png' 
+  },
+  { 
+    id: 'f_peace', 
+    name: 'peace', 
+    category: 'female', 
+    rarity: 'Rare', 
+    description: 'Silence settles all!', 
+    price: 30, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/PEACE%20CARD%20(F).png' 
+  },
+  { 
+    id: 'f_18plus', 
+    name: '18+ card', 
+    category: 'female', 
+    rarity: 'Epic', 
+    description: 'Time for breakfast!', 
+    price: 100, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/18+%20CARD%20(F).png' 
+  },
+  { 
+    id: 'f_surprise', 
+    name: 'surprise card', 
+    category: 'female', 
+    rarity: 'Legendary', 
+    description: 'Give me something!', 
+    price: 300, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/SUPRISE%20CARD%20(F).png' 
+  },
+  { 
+    id: 'f_anything', 
+    name: 'Anything', 
+    category: 'female', 
+    rarity: 'Mythic', 
+    description: 'Four wishes included!', 
+    price: 1000, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/ANYTHING%20CARD%20(F).png' 
+  },
+  { 
+    id: 'f_special', 
+    name: 'Cash (special)', 
+    category: 'female', 
+    rarity: 'Special', 
+    description: 'Cash', 
+    price: 10000, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/CASH%20CARD%20(F).png' 
+  },
 ];
 
 export const RARITY_COLORS: Record<string, string> = {
@@ -38,3 +149,9 @@ export const RARITY_COIN_VALUES: Record<string, number> = {
   Mythic: 500,
   Special: 1000
 };
+
+export const PROFILE_AVATARS = {
+  male: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/maleuser.png',
+  female: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/femaleuser.png'
+};
+

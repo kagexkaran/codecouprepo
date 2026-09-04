@@ -59,6 +59,8 @@ export async function syncUserDataToSupabase(user: User): Promise<boolean> {
         shopPurchasedCards: user.shopPurchasedCards,
         dailyLoginCount: user.dailyLoginCount,
         dailyLoginLastClaim: user.dailyLoginLastClaim,
+        dailyStreak: user.dailyStreak,
+        history: user.history,
       },
     });
 
@@ -108,5 +110,7 @@ export function extractUserFromAuth(authUser: any, fallbackPairingCode: string):
     shopPurchasedCards: meta.shopPurchasedCards,
     dailyLoginCount: meta.dailyLoginCount,
     dailyLoginLastClaim: meta.dailyLoginLastClaim,
+    dailyStreak: typeof meta.dailyStreak === 'number' ? meta.dailyStreak : 0,
+    history: meta.history || [],
   };
 }

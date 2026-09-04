@@ -10,9 +10,29 @@ export interface Card {
   price: number;
 }
 
+export type HistoryEventType = 'use' | 'purchase' | 'trade' | 'completed';
+
+export interface HistoryItem {
+  id: string;
+  type: HistoryEventType;
+  cardId: string;
+  cardName: string;
+  cardCategory?: 'male' | 'female' | 'special';
+  cardRarity?: Rarity;
+  timestamp: number;
+  userName: string;
+  details?: string;
+}
+
 export interface ActiveCard {
+  id: string;
   cardId: string;
   expiresAt: number;
+  startedAt?: number;
+  usedBy: string;
+  usedByUserId: string;
+  completed?: boolean;
+  completedAt?: number;
 }
 
 export interface User {
@@ -33,6 +53,8 @@ export interface User {
   shopPurchasedCards?: string[];
   dailyLoginCount?: number;
   dailyLoginLastClaim?: number;
+  dailyStreak?: number;
+  history?: HistoryItem[];
 }
 
 export type Tab = 'dashboard' | 'collection' | 'shop' | 'settings' | 'couple';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { KeyRound, Mail, UserPlus, LogIn, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { retroAudio } from '../lib/audio';
 
 interface AuthScreenProps {
   onAuthenticated: (authUser: any) => void;
@@ -22,11 +23,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
+      retroAudio.playError();
       setErrorMsg('Please enter both email and password.');
       return;
     }
 
     if (password.length < 6) {
+      retroAudio.playError();
       setErrorMsg('Password must be at least 6 characters.');
       return;
     }
@@ -41,6 +44,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
         });
 
         if (error) {
+          retroAudio.playError();
           if (error.message?.includes('rate limit') || (error as any).code === 'over_email_send_rate_limit') {
             setErrorMsg('Supabase hourly email rate limit reached. If you already have an account, please switch to Log In. Or you can test via Guest Play below!');
           } else {
@@ -50,11 +54,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
         }
 
         if (data.session && data.user) {
+          retroAudio.playPairSuccess();
           setSuccessMsg('Account created successfully! Logging in...');
           setTimeout(() => {
             onAuthenticated(data.user);
           }, 800);
         } else if (data.user) {
+          retroAudio.playPairSuccess();
           setSuccessMsg('Account registered! If confirmation is required, check your email, or log in now.');
           // Auto-continue to onboarding with the created user
           setTimeout(() => {
@@ -69,11 +75,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
         });
 
         if (error) {
+          retroAudio.playError();
           setErrorMsg(error.message || 'Invalid email or password.');
           return;
         }
 
         if (data.user) {
+          retroAudio.playPairSuccess();
           setSuccessMsg('Login successful! Loading your cards...');
           setTimeout(() => {
             onAuthenticated(data.user);
@@ -81,6 +89,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
         }
       }
     } catch (err: any) {
+      retroAudio.playError();
       setErrorMsg(err?.message || 'An unexpected authentication error occurred.');
     } finally {
       setLoading(false);
@@ -110,8 +119,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
         <div className="grid grid-cols-2 gap-2 mb-6">
           <button
             type="button"
-            onClick={() => { setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
-            className={`py-2 text-sm font-black uppercase border-2 border-black transition-all flex items-center justify-center gap-2 ${
+            onClick={() => { retroAudio.playButtonClick(); setMode('login'); setErrorMsg(null); setSuccessMsg(null); }}
+            className={`py-2 text-sm font-black uppercase border-2 border-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
               mode === 'login'
                 ? 'bg-pink-500 text-black shadow-none translate-y-1'
                 : 'bg-[#222233] text-gray-300 hover:text-white shadow-[3px_3px_0_0_rgba(0,0,0,1)]'
@@ -122,8 +131,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
           </button>
           <button
             type="button"
-            onClick={() => { setMode('signup'); setErrorMsg(null); setSuccessMsg(null); }}
-            className={`py-2 text-sm font-black uppercase border-2 border-black transition-all flex items-center justify-center gap-2 ${
+            onClick={() => { retroAudio.playButtonClick(); setMode('signup'); setErrorMsg(null); setSuccessMsg(null); }}
+            className={`py-2 text-sm font-black uppercase border-2 border-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
               mode === 'signup'
                 ? 'bg-pink-500 text-black shadow-none translate-y-1'
                 : 'bg-[#222233] text-gray-300 hover:text-white shadow-[3px_3px_0_0_rgba(0,0,0,1)]'
@@ -215,8 +224,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
           <p className="text-[11px] text-gray-400 uppercase font-bold mb-3">Or continue locally without an account:</p>
           <button
             type="button"
-            onClick={onGuestContinue}
-            className="w-full py-2 bg-[#222233] border-2 border-black text-gray-300 hover:text-white hover:bg-[#2c2c40] font-bold uppercase text-xs transition-all shadow-[2px_2px_0_0_rgba(0,0,0,1)] flex items-center justify-center gap-2"
+            onClick={() => { retroAudio.playButtonClick(); onGuestContinue(); }}
+            className="w-full py-2 bg-[#222233] border-2 border-black text-gray-300 hover:text-white hover:bg-[#2c2c40] font-bold uppercase text-xs transition-all shadow-[2px_2px_0_0_rgba(0,0,0,1)] flex items-center justify-center gap-2 cursor-pointer"
           >
             <Sparkles size={14} className="text-yellow-400" />
             GUEST / QUICK PLAY

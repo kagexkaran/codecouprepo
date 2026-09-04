@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User, Card, Rarity } from '../types';
-import { Coins, Heart, Users, Calendar } from 'lucide-react';
-import { INITIAL_CARDS } from '../data';
+import { Coins, Heart, Users, Calendar, Flame, CheckCircle, ShieldAlert } from 'lucide-react';
+import { INITIAL_CARDS, PROFILE_AVATARS } from '../data';
+import { retroAudio } from '../lib/audio';
 
 interface DashboardProps {
   user: User;
@@ -16,14 +17,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
 
   const handlePair = () => {
     if (partnerCodeInput.trim()) {
+      retroAudio.playPairSuccess();
       onPair(partnerCodeInput.trim());
       setPartnerCodeInput('');
+    } else {
+      retroAudio.playError();
     }
   };
 
   const currentDay = (user.dailyLoginCount || 0) + 1;
   const canClaim = !user.dailyLoginLastClaim || (Date.now() - user.dailyLoginLastClaim > 24 * 60 * 60 * 1000);
   
+  // Streak calculation: check if streak was broken (missed day: > 48h since previous claim)
+  const isStreakBroken = user.dailyLoginLastClaim 
+    ? (Date.now() - user.dailyLoginLastClaim > 48 * 60 * 60 * 1000)
+    : false;
+  const activeStreak = isStreakBroken ? 0 : (user.dailyStreak || 0);
+
   const getRewardForDay = (day: number): { rarity?: Rarity, coins: number } => {
     if (day > 30) return { coins: 50 }; // fallback after month
     const rewards: Record<number, Rarity> = {
@@ -40,6 +50,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
   };
 
   const handleClaim = () => {
+    retroAudio.playDailyClaim();
     const reward = getRewardForDay(currentDay);
     let cards: Card[] = [];
     if (reward.rarity) {
@@ -51,10 +62,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
     
     onClaimDaily(cards, reward.coins);
     
+    const nextStreak = isStreakBroken || !user.dailyLoginLastClaim ? 1 : activeStreak + 1;
     if (cards.length > 0) {
-      setRewardNotification(`Claimed ${cards[0].name} (${cards[0].rarity})!`);
+      setRewardNotification(`Claimed ${cards[0].name} (${cards[0].rarity})! 🔥 Streak: ${nextStreak} Days!`);
     } else {
-      setRewardNotification(`Claimed ${reward.coins} Coins!`);
+      setRewardNotification(`Claimed ${reward.coins} Coins! 🔥 Streak: ${nextStreak} Days!`);
     }
     setTimeout(() => setRewardNotification(null), 4000);
   };
@@ -68,17 +80,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
         </p>
         <div className="flex flex-col sm:flex-row gap-6 w-full max-w-2xl px-4">
           <button 
-            onClick={() => onSelectGender('male')}
-            className="flex-1 p-8 bg-blue-500 border-4 border-black text-black text-2xl font-black uppercase shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-4 group"
+            onClick={() => { retroAudio.playButtonClick(); onSelectGender('male'); }}
+            className="flex-1 p-8 bg-blue-500 border-4 border-black text-black text-2xl font-black uppercase shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-4 group cursor-pointer"
           >
-            <div className="w-20 h-20 bg-black/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">♂</div>
+            <div className="w-24 h-24 bg-black border-4 border-black overflow-hidden group-hover:scale-105 transition-transform">
+              <img 
+                src={PROFILE_AVATARS.male} 
+                alt="Male Profile" 
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover" 
+              />
+            </div>
             MALE
           </button>
           <button 
-            onClick={() => onSelectGender('female')}
-            className="flex-1 p-8 bg-pink-500 border-4 border-black text-black text-2xl font-black uppercase shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-4 group"
+            onClick={() => { retroAudio.playButtonClick(); onSelectGender('female'); }}
+            className="flex-1 p-8 bg-pink-500 border-4 border-black text-black text-2xl font-black uppercase shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex flex-col items-center gap-4 group cursor-pointer"
           >
-            <div className="w-20 h-20 bg-black/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">♀</div>
+            <div className="w-24 h-24 bg-black border-4 border-black overflow-hidden group-hover:scale-105 transition-transform">
+              <img 
+                src={PROFILE_AVATARS.female} 
+                alt="Female Profile" 
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover" 
+              />
+            </div>
             FEMALE
           </button>
         </div>
@@ -91,17 +117,55 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
       
       {/* Profile Header */}
       <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-        <h2 className="text-3xl font-black uppercase mb-4 text-pink-400">Player Profile</h2>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-          <div className={`w-24 h-24 border-4 border-black flex items-center justify-center shrink-0 ${user.gender === 'male' ? 'bg-blue-500' : 'bg-pink-500'}`}>
-            <span className="text-4xl text-black font-black">{user.gender === 'male' ? '♂' : '♀'}</span>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-3xl font-black uppercase text-pink-400">Player Profile</h2>
+          {/* Profile Section Streak Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-black border-2 border-black font-black uppercase text-xs shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <Flame size={14} className="fill-black text-black animate-bounce shrink-0" />
+            <span>{activeStreak} {activeStreak === 1 ? 'DAY' : 'DAYS'} STREAK</span>
           </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+          {/* Avatar Profile Image */}
+          <div className={`w-24 h-24 border-4 border-black overflow-hidden relative shrink-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${user.gender === 'male' ? 'bg-blue-600' : 'bg-pink-600'}`}>
+            <img 
+              src={user.gender === 'female' ? PROFILE_AVATARS.female : PROFILE_AVATARS.male} 
+              alt={user.gender || 'Player Avatar'} 
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-cover object-center" 
+            />
+          </div>
+
           <div className="min-w-0 flex-1 w-full">
-            <p className="text-xl uppercase font-bold text-white break-all truncate w-full">{user.name}</p>
-            <p className="text-sm text-gray-400 uppercase tracking-widest mt-1">Code: <span className="text-white select-all">{user.pairingCode}</span></p>
-            <div className="mt-4 flex items-center bg-black p-2 border-2 border-white/20 w-fit">
-              <span className="text-yellow-400 text-2xl mr-2">●</span>
-              <span className="text-xl sm:text-2xl font-bold truncate">{user.coins.toLocaleString()} COINS</span>
+            <div className="flex items-center gap-2">
+              <p className="text-xl uppercase font-bold text-white break-all truncate">{user.name}</p>
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 border border-black ${user.gender === 'male' ? 'bg-blue-400 text-black' : 'bg-pink-400 text-black'}`}>
+                {user.gender}
+              </span>
+            </div>
+
+            <p className="text-sm text-gray-400 uppercase tracking-widest mt-1">
+              Code: <span className="text-white select-all font-mono">{user.pairingCode}</span>
+            </p>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <div className="flex items-center bg-black p-2 border-2 border-white/20 w-fit">
+                <span className="text-yellow-400 text-xl mr-2">●</span>
+                <span className="text-lg sm:text-xl font-bold truncate">{user.coins.toLocaleString()} COINS</span>
+              </div>
+
+              {isStreakBroken ? (
+                <div className="flex items-center gap-1 text-[11px] text-amber-300 bg-red-950/80 border border-red-500 px-2 py-1 font-bold uppercase">
+                  <ShieldAlert size={14} className="text-red-400" />
+                  <span>Streak reset! Claim today</span>
+                </div>
+              ) : activeStreak > 0 ? (
+                <div className="flex items-center gap-1 text-[11px] text-amber-400 bg-amber-950/40 border border-amber-500/50 px-2 py-1 font-bold uppercase">
+                  <Flame size={13} className="fill-amber-400 text-amber-400" />
+                  <span>Active Streak Protected</span>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -136,7 +200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
               />
               <button 
                 onClick={handlePair}
-                className="px-6 py-2 bg-pink-500 text-black border-4 border-black font-bold uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all whitespace-nowrap shrink-0"
+                className="px-6 py-2 bg-pink-500 text-black border-4 border-black font-bold uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Pair
               </button>
@@ -148,9 +212,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
 
       {/* Daily Login Section */}
       <div className="md:col-span-2 p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-        <div className="flex items-center gap-4 mb-4">
-          <Calendar className="w-8 h-8 text-blue-400" />
-          <h2 className="text-3xl font-black uppercase text-blue-400">Daily Login Bonus</h2>
+        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Calendar className="w-8 h-8 text-blue-400" />
+            <h2 className="text-3xl font-black uppercase text-blue-400">Daily Login Bonus</h2>
+          </div>
+
+          {/* Daily Streak Highlight Badge */}
+          <div className="flex items-center gap-2 bg-black border-2 border-black px-3 py-1 shadow-[2px_2px_0_rgba(0,0,0,1)]">
+            <Flame size={18} className="fill-amber-400 text-amber-400 animate-pulse" />
+            <span className="text-xs font-black uppercase text-gray-400">Streak:</span>
+            <span className="text-sm font-black uppercase text-amber-400">{activeStreak} {activeStreak === 1 ? 'Day' : 'Days'}</span>
+          </div>
         </div>
         
         {!user.partnerCode ? (
@@ -160,12 +233,56 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Daily Streak Counter Block */}
+            <div className="bg-black border-4 border-black p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                  <Flame size={28} className="fill-black text-black" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black uppercase text-base sm:text-lg text-amber-400">Daily Streak Counter</h3>
+                    <span className="text-xs bg-amber-400 text-black font-black px-2 py-0.5 border border-black">
+                      {activeStreak} {activeStreak === 1 ? 'DAY' : 'DAYS'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 uppercase font-bold mt-1">
+                    {canClaim
+                      ? activeStreak === 0
+                        ? '🔥 Claim today to begin your login streak at Day 1!'
+                        : `🔥 Claim today to advance to a ${activeStreak + 1}-Day streak!`
+                      : '✓ Streak protected for today! Return tomorrow to keep the flame alive.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Visual Milestone Badges */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto flex-wrap">
+                {[1, 3, 7, 14, 30].map(milestone => {
+                  const reached = activeStreak >= milestone;
+                  return (
+                    <div
+                      key={milestone}
+                      title={`${milestone} Day Streak Milestone`}
+                      className={`px-2 py-1 border-2 text-[10px] font-black uppercase transition-all ${
+                        reached
+                          ? 'bg-amber-400 text-black border-black shadow-[2px_2px_0_rgba(0,0,0,1)] font-black'
+                          : 'bg-black/60 text-gray-600 border-gray-800'
+                      }`}
+                    >
+                      {milestone}D
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="flex justify-between items-center bg-black border-4 border-black p-4">
               <span className="font-bold uppercase text-gray-400">Day <span className="text-white text-xl">{currentDay > 30 ? 30 : currentDay}</span> / 30</span>
               <button 
                 onClick={handleClaim}
                 disabled={!canClaim || currentDay > 30}
-                className={`px-6 py-2 border-4 border-black font-black uppercase transition-all shadow-[4px_4px_0_rgba(0,0,0,1)] ${
+                className={`px-6 py-2 border-4 border-black font-black uppercase transition-all shadow-[4px_4px_0_rgba(0,0,0,1)] cursor-pointer ${
                   canClaim && currentDay <= 30
                     ? 'bg-yellow-400 text-black hover:translate-y-1 hover:shadow-none' 
                     : 'bg-gray-700 text-gray-500 cursor-not-allowed shadow-none'
@@ -174,6 +291,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPair, onSelectGend
                 {canClaim ? (currentDay > 30 ? 'Completed' : 'Claim Reward') : 'Next Tomorrow'}
               </button>
             </div>
+
             {rewardNotification && (
               <div className="p-3 bg-green-500 text-black border-4 border-black font-black uppercase text-center animate-in fade-in zoom-in duration-300">
                 {rewardNotification}

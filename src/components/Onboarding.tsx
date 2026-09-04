@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Card } from '../types';
 import { INITIAL_CARDS } from '../data';
 import { UserCheck, Sparkles, ArrowRight, Shield } from 'lucide-react';
+import { retroAudio } from '../lib/audio';
 
 interface OnboardingProps {
   user: User;
@@ -17,18 +18,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ user, onComplete }) => {
     e.preventDefault();
     const trimmed = usernameInput.trim();
     if (!trimmed) {
+      retroAudio.playError();
       setErrorMsg('Please enter a username.');
       return;
     }
     if (trimmed.length < 2) {
+      retroAudio.playError();
       setErrorMsg('Username must be at least 2 characters.');
       return;
     }
+    retroAudio.playButtonClick();
     setErrorMsg(null);
     setStep('gender');
   };
 
   const handleGenderSelect = (gender: 'male' | 'female') => {
+    retroAudio.playPairSuccess();
     // Grant starter collection of the chosen gender
     const newCollection = { ...user.collection };
     INITIAL_CARDS.forEach((card: Card) => {

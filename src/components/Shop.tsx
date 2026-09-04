@@ -3,6 +3,7 @@ import { User, Card, Rarity } from '../types';
 import { INITIAL_CARDS } from '../data';
 import { CardView } from './CardView';
 import { Clock, Coins } from 'lucide-react';
+import { retroAudio } from '../lib/audio';
 
 interface ShopProps {
   user: User;
@@ -46,16 +47,19 @@ export const Shop: React.FC<ShopProps> = ({ user, onPurchase, onRefreshShop }) =
 
   const handlePurchase = (card: Card) => {
     if (!canPurchase) {
+      retroAudio.playError();
       setNotification("Daily purchase limit reached!");
       setTimeout(() => setNotification(null), 3000);
       return;
     }
     
     if (user.coins >= card.price) {
+      retroAudio.playPurchase();
       onPurchase(card);
       setNotification(`Purchased ${card.name}!`);
       setTimeout(() => setNotification(null), 3000);
     } else {
+      retroAudio.playError();
       setNotification(`Not enough coins for ${card.name}!`);
       setTimeout(() => setNotification(null), 3000);
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Tab, Card } from './types';
+import { User, Tab, Card, HistoryItem, ActiveCard } from './types';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
 import { Collection } from './components/Collection';
@@ -8,9 +8,17 @@ import { Settings } from './components/Settings';
 import { Couple } from './components/Couple';
 import { AuthScreen } from './components/AuthScreen';
 import { Onboarding } from './components/Onboarding';
-import { INITIAL_CARDS } from './data';
+import { INITIAL_CARDS, PROFILE_AVATARS } from './data';
 import { supabase, syncUserDataToSupabase, extractUserFromAuth } from './lib/supabase';
-import { LogOut, Cloud, CloudCheck, RefreshCw } from 'lucide-react';
+import { LogOut, Cloud, CloudCheck, RefreshCw, Volume2, VolumeX, Flame } from 'lucide-react';
+import { retroAudio } from './lib/audio';
+
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+export const pruneHistory = (history: HistoryItem[] = []): HistoryItem[] => {
+  const cutoff = Date.now() - ONE_WEEK_MS;
+  return history.filter(item => item.timestamp >= cutoff);
+};
 
 const generatePairingCode = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -31,6 +39,15 @@ export default function App() {
   const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('synced');
   const [currentTab, setCurrentTab] = useState<Tab>('dashboard');
+  const [isMuted, setIsMuted] = useState<boolean>(retroAudio.getMuted());
+
+  const handleToggleSound = () => {
+    const muted = retroAudio.toggleMute();
+    setIsMuted(muted);
+    if (!muted) {
+      retroAudio.playPurchase();
+    }
+  };
 
   const [user, setUser] = useState<User>(() => {
     const saved = localStorage.getItem('retroCardsUser');
@@ -149,6 +166,7 @@ export default function App() {
   };
 
   const handlePair = (code: string) => {
+    retroAudio.playPairSuccess();
     setUser(prev => {
       const updated: User = { 
         ...prev, 
@@ -161,9 +179,22 @@ export default function App() {
   };
 
   const handleExchange = (cardId: string, coinValue: number) => {
+    retroAudio.playPurchase();
     setUser(prev => {
       const currentQty = prev.collection[cardId] || 0;
       if (currentQty > 1) {
+        const cardDef = INITIAL_CARDS.find(c => c.id === cardId);
+        const historyItem: HistoryItem = {
+          id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          type: 'trade',
+          cardId,
+          cardName: cardDef?.name || 'Card',
+          cardCategory: cardDef?.category,
+          cardRarity: cardDef?.rarity,
+          timestamp: Date.now(),
+          userName: prev.name || 'You',
+          details: `Exchanged duplicate card for ${coinValue} coins`,
+        };
         const updated: User = {
           ...prev,
           coins: prev.coins + coinValue,
@@ -171,6 +202,7 @@ export default function App() {
             ...prev.collection,
             [cardId]: currentQty - 1,
           },
+          history: pruneHistory([historyItem, ...(prev.history || [])]),
         };
         triggerCloudSync(updated);
         return updated;
@@ -180,8 +212,20 @@ export default function App() {
   };
 
   const handlePurchase = (card: Card) => {
+    retroAudio.playPurchase();
     setUser(prev => {
       if (prev.coins >= card.price) {
+        const historyItem: HistoryItem = {
+          id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          type: 'purchase',
+          cardId: card.id,
+          cardName: card.name,
+          cardCategory: card.category,
+          cardRarity: card.rarity,
+          timestamp: Date.now(),
+          userName: prev.name || 'You',
+          details: `Purchased from Market for ${card.price} coins`,
+        };
         const updated: User = {
           ...prev,
           coins: prev.coins - card.price,
@@ -191,6 +235,7 @@ export default function App() {
             ...prev.collection,
             [card.id]: (prev.collection[card.id] || 0) + 1,
           },
+          history: pruneHistory([historyItem, ...(prev.history || [])]),
         };
         triggerCloudSync(updated);
         return updated;
@@ -200,17 +245,41 @@ export default function App() {
   };
 
   const handleUseCard = (cardId: string) => {
+    retroAudio.playCardInspect();
     setUser(prev => {
       const currentQty = prev.collection[cardId] || 0;
       if (currentQty > 0) {
-        const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+        const cardDef = INITIAL_CARDS.find(c => c.id === cardId);
+        const startedAt = Date.now();
+        const expiresAt = startedAt + 24 * 60 * 60 * 1000;
+        const activeCard: ActiveCard = {
+          id: 'act_' + startedAt + '_' + Math.random().toString(36).substring(2, 7),
+          cardId,
+          startedAt,
+          expiresAt,
+          usedBy: prev.name || 'You',
+          usedByUserId: prev.id,
+          completed: false,
+        };
+        const historyItem: HistoryItem = {
+          id: 'hist_' + startedAt + '_' + Math.random().toString(36).substring(2, 7),
+          type: 'use',
+          cardId,
+          cardName: cardDef?.name || 'Card',
+          cardCategory: cardDef?.category,
+          cardRarity: cardDef?.rarity,
+          timestamp: startedAt,
+          userName: prev.name || 'You',
+          details: 'Activated couple task effect (24h timer)',
+        };
         const updated: User = {
           ...prev,
           collection: {
             ...prev.collection,
             [cardId]: currentQty - 1,
           },
-          activeCards: [...(prev.activeCards || []), { cardId, expiresAt }],
+          activeCards: [...(prev.activeCards || []), activeCard],
+          history: pruneHistory([historyItem, ...(prev.history || [])]),
         };
         triggerCloudSync(updated);
         return updated;
@@ -219,7 +288,69 @@ export default function App() {
     });
   };
 
+  const handleCompleteTask = (activeCardId: string) => {
+    setUser(prev => {
+      const activeList = prev.activeCards || [];
+      const target = activeList.find(a => a.id === activeCardId || a.cardId === activeCardId);
+      if (!target) return prev;
+
+      // Verification: confirmation can only be done by the user who used the cards
+      if (target.usedByUserId && target.usedByUserId !== prev.id) {
+        retroAudio.playError();
+        alert(`Only ${target.usedBy || 'the user'} who played this card can confirm task completion!`);
+        return prev;
+      }
+
+      retroAudio.playPairSuccess();
+      const cardDef = INITIAL_CARDS.find(c => c.id === target.cardId);
+      const historyItem: HistoryItem = {
+        id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        type: 'completed',
+        cardId: target.cardId,
+        cardName: cardDef?.name || 'Card',
+        cardCategory: cardDef?.category,
+        cardRarity: cardDef?.rarity,
+        timestamp: Date.now(),
+        userName: prev.name || 'You',
+        details: 'Task completed and verified by creator',
+      };
+
+      const remainingActive = activeList.filter(a => a.id !== activeCardId && a.cardId !== activeCardId);
+      const updated: User = {
+        ...prev,
+        activeCards: remainingActive,
+        history: pruneHistory([historyItem, ...(prev.history || [])]),
+      };
+      triggerCloudSync(updated);
+      return updated;
+    });
+  };
+
+  const handleUpdateActiveCardTime = (activeCardId: string, additionalMs: number) => {
+    retroAudio.playButtonClick();
+    setUser(prev => {
+      const activeList = prev.activeCards || [];
+      const updatedActive = activeList.map(a => {
+        if (a.id === activeCardId || a.cardId === activeCardId) {
+          const newExpiresAt = Math.max(Date.now() + 60000, a.expiresAt + additionalMs);
+          return {
+            ...a,
+            expiresAt: newExpiresAt,
+          };
+        }
+        return a;
+      });
+      const updated: User = {
+        ...prev,
+        activeCards: updatedActive,
+      };
+      triggerCloudSync(updated);
+      return updated;
+    });
+  };
+
   const handleSendCard = (cardId: string) => {
+    retroAudio.playButtonClick();
     alert("Card sent to partner! (Simulated)");
     setUser(prev => {
       const currentQty = prev.collection[cardId] || 0;
@@ -286,12 +417,28 @@ export default function App() {
       cards.forEach(c => {
         newCollection[c.id] = (newCollection[c.id] || 0) + 1;
       });
+
+      const now = Date.now();
+      let newStreak = 1;
+      if (prev.dailyLoginLastClaim) {
+        const elapsed = now - prev.dailyLoginLastClaim;
+        // If claimed within 48h since previous claim, increment streak; otherwise reset to 1
+        if (elapsed <= 48 * 60 * 60 * 1000) {
+          newStreak = (prev.dailyStreak || 0) + 1;
+        } else {
+          newStreak = 1;
+        }
+      } else {
+        newStreak = 1;
+      }
+
       const updated: User = {
         ...prev,
         coins: prev.coins + coins,
         collection: newCollection,
         dailyLoginCount: (prev.dailyLoginCount || 0) + 1,
-        dailyLoginLastClaim: Date.now(),
+        dailyLoginLastClaim: now,
+        dailyStreak: newStreak,
       };
       triggerCloudSync(updated);
       return updated;
@@ -427,14 +574,41 @@ export default function App() {
           </div>
 
           {/* User Profile Pill */}
-          <div className="flex items-center bg-[#333344] border-2 border-black px-3 py-1 gap-2 shadow-[2px_2px_0_rgba(0,0,0,1)]">
-            <span className={`w-5 h-5 rounded-full border border-black flex items-center justify-center text-xs font-black text-black ${user.gender === 'male' ? 'bg-blue-400' : 'bg-pink-400'}`}>
-              {user.gender === 'male' ? '♂' : '♀'}
-            </span>
-            <span className="text-xs font-black uppercase text-white truncate max-w-[120px]">
+          <div className="flex items-center bg-[#333344] border-2 border-black px-2.5 py-1 gap-2 shadow-[2px_2px_0_rgba(0,0,0,1)]">
+            <div className="w-6 h-6 border border-black overflow-hidden bg-black shrink-0 flex items-center justify-center">
+              {user.gender ? (
+                <img 
+                  src={user.gender === 'female' ? PROFILE_AVATARS.female : PROFILE_AVATARS.male} 
+                  alt={user.gender} 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <span className="text-[10px] font-bold">?</span>
+              )}
+            </div>
+            <span className="text-xs font-black uppercase text-white truncate max-w-[100px]">
               {user.name}
             </span>
+            {user.dailyStreak && user.dailyStreak > 0 ? (
+              <span className="flex items-center text-[10px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-black px-1.5 py-0.5 border border-black" title={`${user.dailyStreak} Day Streak!`}>
+                <Flame size={10} className="fill-black mr-0.5" />
+                {user.dailyStreak}d
+              </span>
+            ) : null}
           </div>
+
+          {/* Sound Mute/Unmute Toggle */}
+          <button
+            onClick={handleToggleSound}
+            title={isMuted ? "Enable 8-bit Sound Effects" : "Mute Sound Effects"}
+            className={`px-2.5 py-1.5 border-2 border-black text-xs font-black uppercase transition-all flex items-center gap-1 cursor-pointer shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-none hover:translate-y-px ${
+              isMuted ? 'bg-gray-700 text-gray-400' : 'bg-yellow-400 text-black'
+            }`}
+          >
+            {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            <span className="hidden md:inline">{isMuted ? 'SFX OFF' : 'SFX ON'}</span>
+          </button>
 
           <button
             onClick={handleLogout}
@@ -483,7 +657,13 @@ export default function App() {
               onLogout={handleLogout}
             />
           )}
-          {currentTab === 'couple' && <Couple user={user} />}
+          {currentTab === 'couple' && (
+            <Couple 
+              user={user} 
+              onCompleteTask={handleCompleteTask}
+              onUpdateActiveCardTime={handleUpdateActiveCardTime}
+            />
+          )}
         </div>
       </main>
     </div>

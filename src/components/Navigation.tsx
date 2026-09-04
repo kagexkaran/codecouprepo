@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tab } from '../types';
 import { LayoutDashboard, Library, ShoppingCart, Settings as SettingsIcon, Heart } from 'lucide-react';
+import { retroAudio } from '../lib/audio';
 
 interface NavigationProps {
   currentTab: Tab;
@@ -17,6 +18,11 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange,
     { id: 'settings', label: 'SETTINGS', icon: <SettingsIcon size={18} />, color: 'bg-gray-600' },
   ];
 
+  const handleTabClick = (tabId: Tab) => {
+    retroAudio.playTabSwitch();
+    onTabChange(tabId);
+  };
+
   return (
     <nav className="w-full flex justify-center sticky top-0 z-40 mb-8 px-4">
       <div className="flex space-x-2 overflow-x-auto pb-2">
@@ -25,8 +31,8 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onTabChange,
           return (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 border-4 border-black font-bold uppercase transition-all ${
+              onClick={() => handleTabClick(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 border-4 border-black font-bold uppercase transition-all cursor-pointer ${
                 isActive ? 'bg-[#4ade80] text-black shadow-none translate-y-1' : 'bg-white text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none'
               }`}
             >

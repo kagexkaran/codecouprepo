@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../types';
 import { RARITY_COLORS } from '../data';
 import { X, Gamepad2, Moon, Feather, Flame, Gift, Crown, Banknote } from 'lucide-react';
+import { retroAudio } from '../lib/audio';
 
 interface CardViewProps {
   card: Card;
@@ -26,9 +27,19 @@ export const CardView: React.FC<CardViewProps> = ({ card, quantity, onClick, act
   const [imgError, setImgError] = useState(false);
   const bgColor = RARITY_COLORS[card.rarity] || 'bg-gray-500';
 
+  useEffect(() => {
+    setImgError(false);
+  }, [card.imageUrl]);
+
   const handleCardClick = () => {
+    retroAudio.playCardInspect();
     if (onClick) onClick();
     setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    retroAudio.playButtonClick();
+    setShowModal(false);
   };
 
   return (
@@ -49,6 +60,7 @@ export const CardView: React.FC<CardViewProps> = ({ card, quantity, onClick, act
             <img 
               src={card.imageUrl} 
               alt={card.name} 
+              referrerPolicy="no-referrer"
               onError={() => setImgError(true)}
               className="absolute inset-0 w-full h-full object-cover" 
             />
@@ -80,14 +92,14 @@ export const CardView: React.FC<CardViewProps> = ({ card, quantity, onClick, act
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={handleCloseModal}>
           <div 
             className="bg-[#222233] border-4 border-black shadow-[16px_16px_0_rgba(0,0,0,1)] max-w-md w-full relative flex flex-col items-center p-6"
             onClick={e => e.stopPropagation()}
           >
             <button 
               className="absolute -top-4 -right-4 bg-red-500 text-black border-4 border-black p-2 hover:scale-110 transition-transform cursor-pointer"
-              onClick={() => setShowModal(false)}
+              onClick={handleCloseModal}
             >
               <X size={24} className="stroke-[3]" />
             </button>
@@ -97,6 +109,7 @@ export const CardView: React.FC<CardViewProps> = ({ card, quantity, onClick, act
                 <img 
                   src={card.imageUrl} 
                   alt={card.name} 
+                  referrerPolicy="no-referrer"
                   onError={() => setImgError(true)}
                   className="absolute inset-0 w-full h-full object-cover" 
                 />
