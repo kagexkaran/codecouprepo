@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, syncUserDataToSupabase } from './supabase';
-import { User, PairRequest } from '../types';
+import { User, PairRequest, ActiveCard } from '../types';
 
 export function usePairingSync(
   user: User,
@@ -8,14 +8,25 @@ export function usePairingSync(
   isAuthenticated: boolean
 ) {
   const [incomingRequests, setIncomingRequests] = useState<PairRequest[]>([]);
-  const [outgoingRequest, setOutgoingRequest] = useState<PairRequest | null>(null);
+  const [outgoingRequestState, setOutgoingRequestState] = useState<PairRequest | null>(null);
+  const outgoingRequestRef = useRef<PairRequest | null>(null);
+
+  const setOutgoingRequest = useCallback((val: any) => {
+    setOutgoingRequestState(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      outgoingRequestRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const outgoingRequest = outgoingRequestState;
   const channelRef = useRef<any>(null);
 
   const triggerCloudSync = useCallback((userData: User) => {
-    if (userData.id && isAuthenticated) {
+    if (userData.id) {
       syncUserDataToSupabase(userData).catch(console.warn);
     }
-  }, [isAuthenticated]);
+  }, []);
 
   useEffect(() => {
     if (!user.id || !isAuthenticated) return;
@@ -46,10 +57,11 @@ export function usePairingSync(
         }
       })
       .on('broadcast', { event: 'discover_reply' }, ({ payload }) => {
-        if (payload.toUserId === user.id && outgoingRequest && outgoingRequest.status === 'searching') {
+        const currentReq = outgoingRequestRef.current;
+        if (payload.toUserId === user.id && currentReq && currentReq.status === 'searching') {
           // We found the user we were looking for! Now send the actual pair request.
           const req: PairRequest = {
-            id: outgoingRequest.id,
+            id: currentReq.id,
             fromUserId: user.id,
             fromEmail: user.email || '',
             fromName: user.name,
@@ -131,11 +143,71 @@ export function usePairingSync(
           setUser(prev => {
             if (!prev.partnerId) return prev;
             const updated: User = { ...prev };
-            if (payload.data.dailyStreak !== undefined) updated.partnerStreak = payload.data.dailyStreak;
-            if (payload.data.name) updated.partnerName = payload.data.name;
-            // activeCards sync happens via partnerActiveCards if we add it to the type, but for now we skip.
-            triggerCloudSync(updated);
-            return updated;
+            let hasChanges = false;
+            
+            if (payload.data.dailyStreak !== undefined && updated.partnerStreak !== payload.data.dailyStreak) {
+              updated.partnerStreak = payload.data.dailyStreak;
+              hasChanges = true;
+            }
+            if (payload.data.name && updated.partnerName !== payload.data.name) {
+              updated.partnerName = payload.data.name;
+              hasChanges = true;
+            }
+            if (payload.data.activeCards) {
+              const currentCards = updated.activeCards || [];
+              const incomingCards = payload.data.activeCards as ActiveCard[];
+              
+              // Merge active cards by ID
+              const mergedCards = [...currentCards];
+              let cardsChanged = false;
+              
+              incomingCards.forEach(incomingCard => {
+                const existingIndex = mergedCards.findIndex(c => c.id === incomingCard.id);
+                if (existingIndex >= 0) {
+                  // update if newer or completed
+                  if (incomingCard.completed && !mergedCards[existingIndex].completed) {
+                    mergedCards[existingIndex] = incomingCard;
+                    cardsChanged = true;
+                  }
+                } else {
+                  // it's a new card
+                  mergedCards.push(incomingCard);
+                  cardsChanged = true;
+                }
+              });
+              
+              if (cardsChanged) {
+                updated.activeCards = mergedCards;
+                hasChanges = true;
+              }
+            }
+            
+            if (payload.data.history) {
+              const currentHistory = updated.history || [];
+              const incomingHistory = payload.data.history as any[];
+              
+              const mergedHistory = [...currentHistory];
+              let historyChanged = false;
+              
+              incomingHistory.forEach(incomingItem => {
+                if (!mergedHistory.some(item => item.id === incomingItem.id)) {
+                  mergedHistory.push(incomingItem);
+                  historyChanged = true;
+                }
+              });
+              
+              if (historyChanged) {
+                // sort by timestamp descending
+                updated.history = mergedHistory.sort((a, b) => b.timestamp - a.timestamp);
+                hasChanges = true;
+              }
+            }
+
+            if (hasChanges) {
+              triggerCloudSync(updated);
+              return updated;
+            }
+            return prev;
           });
         }
       })
@@ -150,7 +222,8 @@ export function usePairingSync(
               data: {
                 dailyStreak: user.dailyStreak,
                 name: user.name,
-                activeCards: user.activeCards
+                activeCards: user.activeCards,
+                history: user.history
               }
             }
           });
@@ -174,7 +247,7 @@ export function usePairingSync(
     };
   }, [user.id, user.pairingCode, isAuthenticated]);
 
-  // Sync my activity to partner whenever my streak, name, or activeCards changes
+  // Sync my activity to partner whenever my streak, name, activeCards, or history changes
   useEffect(() => {
     if (channelRef.current && user.partnerId) {
       channelRef.current.send({
@@ -185,12 +258,13 @@ export function usePairingSync(
           data: {
             dailyStreak: user.dailyStreak,
             name: user.name,
-            activeCards: user.activeCards
+            activeCards: user.activeCards,
+            history: user.history
           }
         }
       });
     }
-  }, [user.dailyStreak, user.name, user.activeCards, user.partnerId]);
+  }, [user.dailyStreak, user.name, user.activeCards, user.history, user.partnerId]);
 
   const sendPairRequest = async (targetCode: string) => {
     if (!channelRef.current) return { success: false, message: 'Not connected to real-time sync.' };
@@ -207,7 +281,7 @@ export function usePairingSync(
       toEmail: '',
       toName: '',
       toCode: targetCode,
-      status: 'pending',
+      status: 'searching',
       createdAt: Date.now()
     });
 

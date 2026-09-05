@@ -76,14 +76,20 @@ export default function App() {
           const loadedUser = extractUserFromAuth(session.user, generatePairingCode());
           
           // Merge with any cached local data
-          setUser(prev => ({
-            ...prev,
-            ...loadedUser,
-            // retain name if already present locally and not on metadata
-            name: loadedUser.name || prev.name || '',
-            gender: loadedUser.gender || prev.gender,
-            collection: Object.keys(loadedUser.collection || {}).length > 0 ? loadedUser.collection : prev.collection,
-          }));
+          setUser(prev => {
+            const merged = {
+              ...prev,
+              ...loadedUser,
+              // retain name if already present locally and not on metadata
+              name: loadedUser.name || prev.name || '',
+              gender: loadedUser.gender || prev.gender,
+              collection: Object.keys(loadedUser.collection || {}).length > 0 ? loadedUser.collection : prev.collection,
+            };
+            if (!session.user.user_metadata?.pairingCode) {
+              triggerCloudSync(merged);
+            }
+            return merged;
+          });
         } else if (mounted) {
           // Check if previously logged in as guest
           const guestActive = localStorage.getItem('retroCardsGuestActive');
@@ -105,13 +111,19 @@ export default function App() {
       if (session && session.user && mounted) {
         setIsAuthenticated(true);
         const loadedUser = extractUserFromAuth(session.user, generatePairingCode());
-        setUser(prev => ({
-          ...prev,
-          ...loadedUser,
-          name: loadedUser.name || prev.name || '',
-          gender: loadedUser.gender || prev.gender,
-          collection: Object.keys(loadedUser.collection || {}).length > 0 ? loadedUser.collection : prev.collection,
-        }));
+        setUser(prev => {
+          const merged = {
+            ...prev,
+            ...loadedUser,
+            name: loadedUser.name || prev.name || '',
+            gender: loadedUser.gender || prev.gender,
+            collection: Object.keys(loadedUser.collection || {}).length > 0 ? loadedUser.collection : prev.collection,
+          };
+          if (!session.user.user_metadata?.pairingCode) {
+            triggerCloudSync(merged);
+          }
+          return merged;
+        });
       } else if (event === 'SIGNED_OUT' && mounted) {
         setIsAuthenticated(false);
         localStorage.removeItem('retroCardsGuestActive');

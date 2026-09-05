@@ -76,7 +76,7 @@ export interface PairRequest {
   toEmail: string;
   toName: string;
   toCode: string;
-  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  status: 'searching' | 'pending' | 'accepted' | 'declined' | 'cancelled';
   createdAt: number;
 }
 
