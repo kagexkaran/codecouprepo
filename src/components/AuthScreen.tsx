@@ -106,8 +106,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
               ♥
             </div>
             <div>
-              <h2 className="text-2xl font-black uppercase text-white tracking-tight">Couple-Dex</h2>
-              <p className="text-xs uppercase text-pink-400 font-bold tracking-widest">Supabase Cloud Sync</p>
+              <h2 className="text-2xl font-black uppercase text-white tracking-tight">CARDCOUP</h2>
             </div>
           </div>
           <span className="text-[10px] bg-emerald-500 text-black px-2 py-1 border-2 border-black font-black uppercase shadow-[2px_2px_0_0_rgba(0,0,0,1)]">

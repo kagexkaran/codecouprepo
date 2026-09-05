@@ -420,7 +420,7 @@ export const PairingSection: React.FC<PairingSectionProps> = ({
               Target Code: <span className="text-purple-400">{outgoingRequest.toCode}</span>
             </p>
             <p className="text-[11px] text-gray-400 italic">
-              Once they open Couple-Dex and tap Accept, your accounts will pair automatically.
+              Once they open CARDCOUP and tap Accept, your accounts will pair automatically.
             </p>
           </div>
 

@@ -565,7 +565,7 @@ export default function App() {
         <header className="flex items-center justify-between p-6 bg-[#1a1a2e] border-b-4 border-black mb-8">
           <div className="flex items-center space-x-4">
             <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[4px_4px_0_rgba(0,0,0,1)]">♥</div>
-            <h1 className="text-xl font-black uppercase tracking-tighter">Couple-Dex Onboarding</h1>
+            <h1 className="text-xl font-black uppercase tracking-tighter">CARDCOUP Onboarding</h1>
           </div>
           <button
             onClick={handleLogout}
@@ -591,9 +591,9 @@ export default function App() {
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[3px_3px_0_rgba(0,0,0,1)]">♥</div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Couple-Dex</h1>
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">CARDCOUP</h1>
               <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block sm:inline">
-                Supabase Connected
+                A little card for every kind of love.
               </span>
             </div>
           </div>

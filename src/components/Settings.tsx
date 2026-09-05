@@ -45,7 +45,7 @@ export const Settings: React.FC<SettingsProps> = ({
 
   return (
     <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-2xl mx-auto">
-      <h2 className="text-4xl font-black uppercase mb-8 text-white border-b-4 border-black pb-4">System Config</h2>
+      <h2 className="text-4xl font-black uppercase mb-8 text-white border-b-4 border-black pb-4">Settings</h2>
       
       <div className="space-y-8">
         {/* Retro 8-Bit Sound Settings */}
@@ -71,30 +71,7 @@ export const Settings: React.FC<SettingsProps> = ({
           </button>
         </div>
 
-        {/* Supabase Connection Details */}
-        <div className="bg-[#1a1a2e] border-4 border-black p-4 space-y-3">
-          <div className="flex items-center gap-2 text-emerald-400 font-black uppercase text-sm">
-            <Database size={18} />
-            <span>Supabase Cloud Integration</span>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-            <div className="bg-black/40 p-2 border border-black">
-              <span className="text-gray-400 block uppercase font-bold text-[10px]">Project ID:</span>
-              <span className="text-white font-bold">{SUPABASE_PROJECT_ID}</span>
-            </div>
-            <div className="bg-black/40 p-2 border border-black">
-              <span className="text-gray-400 block uppercase font-bold text-[10px]">Storage Bucket:</span>
-              <span className="text-white font-bold">{BUCKET_NAME}</span>
-            </div>
-            {user.email && (
-              <div className="bg-black/40 p-2 border border-black sm:col-span-2">
-                <span className="text-gray-400 block uppercase font-bold text-[10px]">Logged In Email:</span>
-                <span className="text-yellow-400 font-bold">{user.email}</span>
-              </div>
-            )}
-          </div>
-        </div>
+
 
         {/* Username Edit Form */}
         <form onSubmit={handleSaveName} className="flex flex-col">
@@ -164,7 +141,7 @@ export const Settings: React.FC<SettingsProps> = ({
             className="w-full py-3 bg-yellow-400 text-black border-4 border-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogOut size={18} />
-            Log Out of Supabase
+            Log Out
           </button>
 
           <button 
