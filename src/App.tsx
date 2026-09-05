@@ -341,10 +341,15 @@ export default function App() {
         selectedOptions: target.selectedOptions,
       };
 
-      const remainingActive = activeList.filter(a => a.id !== activeCardId && a.cardId !== activeCardId);
+      const updatedActive = activeList.map(a => {
+        if (a.id === activeCardId || a.cardId === activeCardId) {
+          return { ...a, completed: true, completedAt: Date.now() };
+        }
+        return a;
+      });
       const updated: User = {
         ...prev,
-        activeCards: remainingActive,
+        activeCards: updatedActive,
         history: pruneHistory([historyItem, ...(prev.history || [])]),
       };
       triggerCloudSync(updated);

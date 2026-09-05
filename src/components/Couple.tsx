@@ -71,7 +71,7 @@ export const Couple: React.FC<CoupleProps> = ({
     }
   }, [user.connectedAt]);
 
-  const activeCards = (user.activeCards || []).filter(ac => ac.expiresAt > currentTime);
+  const activeCards = (user.activeCards || []).filter(ac => ac.expiresAt > currentTime && !ac.completed);
 
   // Card history saved up to 1 week
   const cutoffTime = currentTime - ONE_WEEK_MS;

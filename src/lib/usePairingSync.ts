@@ -164,8 +164,12 @@ export function usePairingSync(
               incomingCards.forEach(incomingCard => {
                 const existingIndex = mergedCards.findIndex(c => c.id === incomingCard.id);
                 if (existingIndex >= 0) {
-                  // update if newer or completed
-                  if (incomingCard.completed && !mergedCards[existingIndex].completed) {
+                  // update if completed or if time changed
+                  const existing = mergedCards[existingIndex];
+                  if (
+                    (incomingCard.completed && !existing.completed) ||
+                    (incomingCard.expiresAt !== existing.expiresAt)
+                  ) {
                     mergedCards[existingIndex] = incomingCard;
                     cardsChanged = true;
                   }
