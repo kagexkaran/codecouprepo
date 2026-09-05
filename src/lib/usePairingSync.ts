@@ -215,6 +215,21 @@ export function usePairingSync(
           });
         }
       })
+      .on('broadcast', { event: 'send_gift' }, ({ payload }) => {
+        if (payload.toUserId === user.id) {
+          setUser(prev => {
+            const currentInbox = prev.giftInbox || [];
+            if (currentInbox.some(g => g.id === payload.gift.id)) return prev;
+            
+            const updated = {
+              ...prev,
+              giftInbox: [payload.gift, ...currentInbox]
+            };
+            triggerCloudSync(updated);
+            return updated;
+          });
+        }
+      })
       .on('broadcast', { event: 'request_sync' }, ({ payload }) => {
         if (payload.toUserId === user.id) {
           // Partner came online and wants my latest state
@@ -227,6 +242,7 @@ export function usePairingSync(
                 dailyStreak: user.dailyStreak,
                 name: user.name,
                 activeCards: user.activeCards,
+                giftInbox: user.giftInbox,
                 history: user.history
               }
             }
@@ -263,12 +279,13 @@ export function usePairingSync(
             dailyStreak: user.dailyStreak,
             name: user.name,
             activeCards: user.activeCards,
+            giftInbox: user.giftInbox,
             history: user.history
           }
         }
       });
     }
-  }, [user.dailyStreak, user.name, user.activeCards, user.history, user.partnerId]);
+  }, [user.dailyStreak, user.name, user.activeCards, user.giftInbox, user.history, user.partnerId]);
 
   const sendPairRequest = async (targetCode: string) => {
     if (!channelRef.current) return { success: false, message: 'Not connected to real-time sync.' };
@@ -368,6 +385,25 @@ export function usePairingSync(
     setOutgoingRequest(null);
   };
 
+  const sendGift = async (cardId: string) => {
+    if (!channelRef.current || !user.partnerId) return false;
+    
+    const gift = {
+      id: 'gift_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      cardId,
+      fromName: user.name || 'Your partner',
+      timestamp: Date.now()
+    };
+    
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'send_gift',
+      payload: { toUserId: user.partnerId, gift }
+    });
+    
+    return true;
+  };
+
   const unpairPartners = async () => {
     if (!channelRef.current || !user.partnerId) return;
 
@@ -400,6 +436,7 @@ export function usePairingSync(
     acceptPairRequest,
     declinePairRequest,
     cancelPairRequest,
+    sendGift,
     unpairPartners,
     triggerCloudSync
   };

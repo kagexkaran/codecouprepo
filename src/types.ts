@@ -26,6 +26,13 @@ export interface HistoryItem {
   selectedOptions?: string[];
 }
 
+export interface GiftItem {
+  id: string;
+  cardId: string;
+  fromName: string;
+  timestamp: number;
+}
+
 export interface ActiveCard {
   id: string;
   cardId: string;
@@ -50,6 +57,7 @@ export interface User {
   initialCardsClaimed?: boolean;
   connectedAt?: number;
   activeCards?: ActiveCard[];
+  giftInbox?: GiftItem[];
   shopLastRefreshTime?: number;
   shopAvailableCards?: string[];
   shopPurchasesToday?: number;

@@ -149,6 +149,7 @@ export default function App() {
     declinePairRequest: handleDeclinePairRequest,
     cancelPairRequest: handleCancelPairRequest,
     unpairPartners: handleUnpair,
+    sendGift,
     triggerCloudSync
   } = usePairingSync(user, setUser, isAuthenticated);
 
@@ -382,12 +383,14 @@ export default function App() {
 
   const handleSendCard = (cardId: string) => {
     retroAudio.playButtonClick();
-    alert("Card sent to partner! (Simulated)");
+    sendGift(cardId);
+    
     setUser(prev => {
       const currentQty = prev.collection[cardId] || 0;
       if (currentQty > 0) {
         const updated: User = {
           ...prev,
+          coins: prev.coins + 10,
           collection: {
             ...prev.collection,
             [cardId]: currentQty - 1,
@@ -397,6 +400,26 @@ export default function App() {
         return updated;
       }
       return prev;
+    });
+  };
+
+  const handleClaimGift = (giftId: string) => {
+    retroAudio.playPurchase();
+    setUser(prev => {
+      const gift = (prev.giftInbox || []).find(g => g.id === giftId);
+      if (!gift) return prev;
+      
+      const currentQty = prev.collection[gift.cardId] || 0;
+      const updated: User = {
+        ...prev,
+        collection: {
+          ...prev.collection,
+          [gift.cardId]: currentQty + 1,
+        },
+        giftInbox: prev.giftInbox?.filter(g => g.id !== giftId) || []
+      };
+      triggerCloudSync(updated);
+      return updated;
     });
   };
 
@@ -734,6 +757,7 @@ export default function App() {
               onOpenAuth={() => setShowAuthModal(true)}
               onCompleteTask={handleCompleteTask}
               onUpdateActiveCardTime={handleUpdateActiveCardTime}
+              onClaimGift={handleClaimGift}
             />
           )}
         </div>
