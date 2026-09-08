@@ -150,7 +150,8 @@ export default function App() {
     cancelPairRequest: handleCancelPairRequest,
     unpairPartners: handleUnpair,
     sendGift,
-    triggerCloudSync
+    triggerCloudSync,
+    requestSync
   } = usePairingSync(user, setUser, isAuthenticated);
 
   const handleAuthenticated = (authUser: any) => {
@@ -416,7 +417,8 @@ export default function App() {
           ...prev.collection,
           [gift.cardId]: currentQty + 1,
         },
-        giftInbox: prev.giftInbox?.filter(g => g.id !== giftId) || []
+        giftInbox: prev.giftInbox?.filter(g => g.id !== giftId) || [],
+        claimedGifts: [...(prev.claimedGifts || []), giftId]
       };
       triggerCloudSync(updated);
       return updated;
@@ -758,6 +760,7 @@ export default function App() {
               onCompleteTask={handleCompleteTask}
               onUpdateActiveCardTime={handleUpdateActiveCardTime}
               onClaimGift={handleClaimGift}
+              onRefreshSync={requestSync}
             />
           )}
         </div>

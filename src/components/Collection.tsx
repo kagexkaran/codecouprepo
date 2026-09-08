@@ -30,7 +30,7 @@ export const Collection: React.FC<CollectionProps> = ({ user, onExchange, onUseC
   const now = Date.now();
   const activeCardIds = new Set(
     (user.activeCards || [])
-      .filter(ac => ac.expiresAt > now)
+      .filter(ac => ac.expiresAt > now && !ac.completed)
       .map(ac => ac.cardId)
   );
 

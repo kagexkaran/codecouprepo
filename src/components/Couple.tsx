@@ -35,6 +35,7 @@ interface CoupleProps {
   onCompleteTask?: (activeCardId: string) => void;
   onUpdateActiveCardTime?: (activeCardId: string, additionalMs: number) => void;
   onClaimGift?: (giftId: string) => void;
+  onRefreshSync?: () => void;
 }
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -51,7 +52,8 @@ export const Couple: React.FC<CoupleProps> = ({
   onOpenAuth,
   onCompleteTask, 
   onUpdateActiveCardTime,
-  onClaimGift
+  onClaimGift,
+  onRefreshSync
 }) => {
   const [daysConnected, setDaysConnected] = useState(0);
   const [historyFilter, setHistoryFilter] = useState<'all' | HistoryEventType>('all');
@@ -287,11 +289,11 @@ export const Couple: React.FC<CoupleProps> = ({
             {/* Real Partner */}
             <div className="flex flex-col items-center">
               <div className={`w-14 h-14 border-2 border-black overflow-hidden mb-1.5 shadow-[2px_2px_0_rgba(0,0,0,1)] flex items-center justify-center ${
-                user.partnerGender === 'male' ? 'bg-blue-600' : user.partnerGender === 'female' ? 'bg-pink-600' : 'bg-gray-800'
+                (user.partnerGender || (user.gender === 'female' ? 'male' : 'female')) === 'male' ? 'bg-blue-600' : (user.partnerGender || (user.gender === 'female' ? 'male' : 'female')) === 'female' ? 'bg-pink-600' : 'bg-gray-800'
               }`}>
                 {user.partnerCode ? (
                   <img 
-                    src={user.partnerGender === 'female' ? PROFILE_AVATARS.female : PROFILE_AVATARS.male} 
+                    src={(user.partnerGender || (user.gender === 'female' ? 'male' : 'female')) === 'female' ? PROFILE_AVATARS.female : PROFILE_AVATARS.male} 
                     alt="Partner" 
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover" 
@@ -368,6 +370,19 @@ export const Couple: React.FC<CoupleProps> = ({
       )}
 
       {/* Middle Section: Active Effects with Complete Task Button & Time Adjustment */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            if (onRefreshSync) {
+              onRefreshSync();
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-black uppercase text-xs border-2 border-black shadow-[3px_3px_0_rgba(0,0,0,1)] hover:translate-y-px hover:shadow-none transition-all cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Force Sync
+        </button>
+      </div>
       <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
           <div>

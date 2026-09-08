@@ -153,6 +153,41 @@ export function usePairingSync(
               updated.partnerName = payload.data.name;
               hasChanges = true;
             }
+            if (payload.data.gender && updated.partnerGender !== payload.data.gender) {
+              updated.partnerGender = payload.data.gender;
+              hasChanges = true;
+            }
+            
+            if (payload.data.claimedGifts) {
+              const incomingClaimed = payload.data.claimedGifts;
+              const currentSent = updated.sentGifts || [];
+              const newSent = currentSent.filter(g => !incomingClaimed.includes(g.id));
+              if (newSent.length !== currentSent.length) {
+                updated.sentGifts = newSent;
+                hasChanges = true;
+              }
+            }
+            
+            if (payload.data.sentGifts) {
+              const incomingSent = payload.data.sentGifts;
+              const currentClaimed = updated.claimedGifts || [];
+              const currentInbox = updated.giftInbox || [];
+              
+              let inboxChanged = false;
+              const mergedInbox = [...currentInbox];
+              
+              incomingSent.forEach(gift => {
+                if (!currentClaimed.includes(gift.id) && !mergedInbox.some(g => g.id === gift.id)) {
+                  mergedInbox.push(gift);
+                  inboxChanged = true;
+                }
+              });
+              
+              if (inboxChanged) {
+                updated.giftInbox = mergedInbox;
+                hasChanges = true;
+              }
+            }
             if (payload.data.activeCards) {
               const currentCards = updated.activeCards || [];
               const incomingCards = payload.data.activeCards as ActiveCard[];
@@ -243,6 +278,9 @@ export function usePairingSync(
                 name: user.name,
                 activeCards: user.activeCards,
                 giftInbox: user.giftInbox,
+                sentGifts: user.sentGifts,
+                claimedGifts: user.claimedGifts,
+                gender: user.gender,
                 history: user.history
               }
             }
@@ -279,13 +317,16 @@ export function usePairingSync(
             dailyStreak: user.dailyStreak,
             name: user.name,
             activeCards: user.activeCards,
-            giftInbox: user.giftInbox,
-            history: user.history
+                giftInbox: user.giftInbox,
+                sentGifts: user.sentGifts,
+                claimedGifts: user.claimedGifts,
+                gender: user.gender,
+                history: user.history
           }
         }
       });
     }
-  }, [user.dailyStreak, user.name, user.activeCards, user.giftInbox, user.history, user.partnerId]);
+  }, [user.dailyStreak, user.name, user.activeCards, user.giftInbox, user.sentGifts, user.claimedGifts, user.gender, user.history, user.partnerId]);
 
   const sendPairRequest = async (targetCode: string) => {
     if (!channelRef.current) return { success: false, message: 'Not connected to real-time sync.' };
@@ -401,7 +442,26 @@ export function usePairingSync(
       payload: { toUserId: user.partnerId, gift }
     });
     
+    setUser(prev => {
+      const updated = {
+        ...prev,
+        sentGifts: [...(prev.sentGifts || []), gift]
+      };
+      triggerCloudSync(updated);
+      return updated;
+    });
+    
     return true;
+  };
+
+  const requestSync = () => {
+    if (channelRef.current && user.partnerId) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'request_sync',
+        payload: { fromUserId: user.id, toUserId: user.partnerId }
+      });
+    }
   };
 
   const unpairPartners = async () => {
@@ -438,6 +498,7 @@ export function usePairingSync(
     cancelPairRequest,
     sendGift,
     unpairPartners,
-    triggerCloudSync
+    triggerCloudSync,
+    requestSync
   };
 }

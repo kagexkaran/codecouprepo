@@ -58,6 +58,8 @@ export interface User {
   connectedAt?: number;
   activeCards?: ActiveCard[];
   giftInbox?: GiftItem[];
+  sentGifts?: GiftItem[];
+  claimedGifts?: string[];
   shopLastRefreshTime?: number;
   shopAvailableCards?: string[];
   shopPurchasesToday?: number;
