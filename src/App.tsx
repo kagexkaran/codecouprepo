@@ -83,6 +83,13 @@ export default function App() {
               // retain name if already present locally and not on metadata
               name: loadedUser.name || prev.name || '',
               gender: loadedUser.gender || prev.gender,
+              partnerId: loadedUser.partnerId !== undefined ? loadedUser.partnerId : prev.partnerId,
+              partnerCode: loadedUser.partnerCode !== undefined ? loadedUser.partnerCode : prev.partnerCode,
+              partnerName: loadedUser.partnerName !== undefined ? loadedUser.partnerName : prev.partnerName,
+              partnerEmail: loadedUser.partnerEmail !== undefined ? loadedUser.partnerEmail : prev.partnerEmail,
+              partnerGender: loadedUser.partnerGender !== undefined ? loadedUser.partnerGender : prev.partnerGender,
+              partnerStreak: loadedUser.partnerStreak !== undefined ? loadedUser.partnerStreak : prev.partnerStreak,
+              connectedAt: loadedUser.connectedAt !== undefined ? loadedUser.connectedAt : prev.connectedAt,
               collection: Object.keys(loadedUser.collection || {}).length > 0 ? loadedUser.collection : prev.collection,
             };
             if (!session.user.user_metadata?.pairingCode) {
@@ -162,6 +169,13 @@ export default function App() {
       ...loaded,
       id: authUser.id,
       email: authUser.email,
+      partnerId: loaded.partnerId !== undefined ? loaded.partnerId : user.partnerId,
+      partnerCode: loaded.partnerCode !== undefined ? loaded.partnerCode : user.partnerCode,
+      partnerName: loaded.partnerName !== undefined ? loaded.partnerName : user.partnerName,
+      partnerEmail: loaded.partnerEmail !== undefined ? loaded.partnerEmail : user.partnerEmail,
+      partnerGender: loaded.partnerGender !== undefined ? loaded.partnerGender : user.partnerGender,
+      partnerStreak: loaded.partnerStreak !== undefined ? loaded.partnerStreak : user.partnerStreak,
+      connectedAt: loaded.connectedAt !== undefined ? loaded.connectedAt : user.connectedAt,
     };
     setUser(merged);
     setIsAuthenticated(true);
@@ -566,8 +580,8 @@ export default function App() {
       <div className="min-h-screen bg-[#222233] text-white font-mono select-none overflow-x-hidden">
         <header className="flex items-center justify-between p-6 bg-[#1a1a2e] border-b-4 border-black mb-8">
           <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[4px_4px_0_rgba(0,0,0,1)]">♥</div>
-            <h1 className="text-xl font-black uppercase tracking-tighter">CARDCOUP Onboarding</h1>
+            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0.5"><img src="https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/ICON.png" alt="Icon" className="w-full h-full object-cover" /></div>
+            <h1 className="text-xl font-black uppercase tracking-tighter">CARDCOUPLE Onboarding</h1>
           </div>
           <button
             onClick={handleLogout}
@@ -591,9 +605,9 @@ export default function App() {
       <header className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 bg-[#1a1a2e] border-b-4 border-black mb-6 gap-4">
         <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[3px_3px_0_rgba(0,0,0,1)]">♥</div>
+            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[3px_3px_0_rgba(0,0,0,1)] p-0.5"><img src="https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/ICON.png" alt="Icon" className="w-full h-full object-cover" /></div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">CARDCOUP</h1>
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">CARDCOUPLE</h1>
               <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block sm:inline">
                 A little card for every kind of love.
               </span>

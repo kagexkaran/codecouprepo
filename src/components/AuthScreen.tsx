@@ -102,11 +102,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated, onGuest
         {/* Decorative Top Accent */}
         <div className="flex items-center justify-between pb-6 mb-6 border-b-4 border-black">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-pink-500 border-2 border-black flex items-center justify-center font-black text-black text-xl shadow-[3px_3px_0_0_rgba(0,0,0,1)]">
-              ♥
+            <div className="w-10 h-10 bg-pink-500 border-2 border-black flex items-center justify-center font-black text-black text-xl shadow-[3px_3px_0_0_rgba(0,0,0,1)] p-0.5">
+              <img src="https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/ICON.png" alt="Icon" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="text-2xl font-black uppercase text-white tracking-tight">CARDCOUP</h2>
+              <h2 className="text-2xl font-black uppercase text-white tracking-tight">CARDCOUPLE</h2>
             </div>
           </div>
           <span className="text-[10px] bg-emerald-500 text-black px-2 py-1 border-2 border-black font-black uppercase shadow-[2px_2px_0_0_rgba(0,0,0,1)]">

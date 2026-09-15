@@ -21,11 +21,24 @@ export const INITIAL_CARDS: Card[] = [
     category: 'male', 
     rarity: 'Common', 
     description: 'Time for sleep!', 
-    price: 10, 
+    price: 50, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/SLEEP%20CARD%20(M).png',
     options: [
       'The universe grants its owner a day of peaceful sleep.',
       'Today, the owner may sleep as long as they wish'
+    ]
+  },
+  { 
+    id: 'm_time',
+    name: 'TIME CARD',
+    category: 'male',
+    rarity: 'Rare', 
+    description: 'Demand your partner\'s undivided time!', 
+    price: 20, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/TIME%20CARD%20(M).png',
+    options: [
+      'Your partner must spend the next hour entirely with you.',
+      'Enjoy uninterrupted quality time together.'
     ]
   },
   { 
@@ -34,7 +47,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'male', 
     rarity: 'Rare', 
     description: 'Silence settles all!', 
-    price: 30, 
+    price: 100, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/PEACE%20CARD%20(M).png',
     options: [
       'Today, the owner cannot lose an argument'
@@ -46,7 +59,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'male', 
     rarity: 'Epic', 
     description: 'Time for breakfast!', 
-    price: 100, 
+    price: 200, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/18+%20CARD.png',
     options: [
       'The owner gets some extra love today',
@@ -59,7 +72,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'male', 
     rarity: 'Legendary', 
     description: 'Give me something!', 
-    price: 300, 
+    price: 600, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/SUPRISE%20CARD%20(M).png',
     options: [
       'The universe demands a surprise for its owner.',
@@ -72,7 +85,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'male', 
     rarity: 'Mythic', 
     description: 'Four wishes included!', 
-    price: 1000, 
+    price: 2000, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/malecards/ANYTHING%20CARD%20(M).png',
     options: [
       'Sleep Together — VC or IRL',
@@ -115,11 +128,24 @@ export const INITIAL_CARDS: Card[] = [
     category: 'female', 
     rarity: 'Common', 
     description: 'Time for sleep!', 
-    price: 10, 
+    price: 50, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/SLEEP%20CARD%20(F).png',
     options: [
       'The universe grants its owner a day of peaceful sleep.',
       'Today, the owner may sleep as long as they wish'
+    ]
+  },
+  { 
+    id: 'f_time',
+    name: 'TIME CARD',
+    category: 'female',
+    rarity: 'Rare', 
+    description: 'Demand your partner\'s undivided time!', 
+    price: 20, 
+    imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/TIME%20CARD%20(F).png',
+    options: [
+      'Your partner must spend the next hour entirely with you.',
+      'Enjoy uninterrupted quality time together.'
     ]
   },
   { 
@@ -128,7 +154,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'female', 
     rarity: 'Rare', 
     description: 'Silence settles all!', 
-    price: 30, 
+    price: 100, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/PEACE%20CARD%20(F).png',
     options: [
       'Today, the owner cannot lose an argument'
@@ -140,7 +166,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'female', 
     rarity: 'Epic', 
     description: 'Time for breakfast!', 
-    price: 100, 
+    price: 200, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/18+%20CARD%20(F).png',
     options: [
       'The owner gets some extra love today',
@@ -153,7 +179,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'female', 
     rarity: 'Legendary', 
     description: 'Give me something!', 
-    price: 300, 
+    price: 600, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/SUPRISE%20CARD%20(F).png',
     options: [
       'The universe demands a surprise for its owner.',
@@ -166,7 +192,7 @@ export const INITIAL_CARDS: Card[] = [
     category: 'female', 
     rarity: 'Mythic', 
     description: 'Four wishes included!', 
-    price: 1000, 
+    price: 2000, 
     imageUrl: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/femalecards/ANYTHING%20CARD%20(F).png',
     options: [
       'Sleep Together — VC or IRL',
