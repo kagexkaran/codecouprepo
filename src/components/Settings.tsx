@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { LogOut, Database, Save, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
-import { SUPABASE_PROJECT_ID, BUCKET_NAME } from '../lib/supabase';
+import { LogOut, Settings as SettingsIcon, Database, Save, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
 import { retroAudio } from '../lib/audio';
 
 interface SettingsProps {
@@ -44,125 +43,102 @@ export const Settings: React.FC<SettingsProps> = ({
   };
 
   return (
-    <div className="p-6 bg-[#333344] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-2xl mx-auto">
-      <h2 className="text-4xl font-black uppercase mb-8 text-white border-b-4 border-black pb-4">Settings</h2>
-      
-      <div className="space-y-8">
-        {/* Retro 8-Bit Sound Settings */}
-        <div className="bg-[#1a1a2e] border-4 border-black p-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            {isMuted ? <VolumeX className="text-red-400" size={24} /> : <Volume2 className="text-yellow-400 animate-pulse" size={24} />}
-            <div>
-              <p className="text-white font-black uppercase text-sm">8-Bit Retro Sound Effects</p>
-              <p className="text-gray-400 text-xs font-bold uppercase">
-                {isMuted ? 'Muted (Audio Off)' : 'Active (Chiptune Synthesizer ON)'}
-              </p>
+    <div className="flex flex-col w-full max-w-[800px] mx-auto gap-6 pb-20 relative">
+      {/* HEADER PANEL */}
+      <div className="pixel-panel p-4 flex flex-col sm:flex-row justify-between items-center gap-4 bg-gradient-to-r from-gray-400 to-gray-600">
+        <h2 className="text-3xl font-black uppercase text-white" style={{textShadow: "2px 2px 0 #000"}}>SETTINGS</h2>
+        <div className="flex items-center gap-4 flex-wrap justify-center">
+          <div className="flex items-center pixel-border-sm bg-white rounded p-1.5 gap-2">
+            <div className="w-8 h-8 bg-gray-600 rounded-full border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0_rgba(0,0,0,1)] text-white font-black">
+              <SettingsIcon size={16} />
             </div>
+            <span className="font-vt323 text-xl font-bold text-black px-2">SYSTEM</span>
           </div>
-          <button
-            onClick={handleToggleSound}
-            className={`px-4 py-2 border-2 border-black font-black uppercase text-xs transition-all cursor-pointer ${
-              isMuted
-                ? 'bg-gray-600 text-white hover:bg-gray-500'
-                : 'bg-yellow-400 text-black hover:bg-yellow-300 shadow-[2px_2px_0_rgba(0,0,0,1)]'
-            }`}
-          >
-            {isMuted ? 'UNMUTE' : 'MUTE'}
-          </button>
         </div>
+      </div>
 
-
-
-        {/* Username Edit Form */}
-        <form onSubmit={handleSaveName} className="flex flex-col">
-          <label className="uppercase font-black text-xs mb-2 text-gray-400">Account Username</label>
-          <div className="flex gap-2">
+      <div className="pixel-panel p-6 bg-white space-y-8">
+        
+        {/* Profile Settings */}
+        <section className="space-y-4">
+          <h3 className="text-xl font-black uppercase text-black border-b-4 border-dashed border-black pb-2">Profile</h3>
+          <form onSubmit={handleSaveName} className="flex gap-4">
             <input 
               type="text" 
-              value={nameInput} 
+              value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
-              className="flex-1 bg-[#1a1a2e] border-4 border-black p-3 font-bold text-white focus:outline-none focus:border-yellow-400 uppercase"
+              className="flex-1 bg-gray-100 border-4 border-black px-4 py-2 font-black uppercase text-black focus:outline-none focus:border-blue-500"
+              placeholder="YOUR NAME"
+              maxLength={16}
             />
-            <button
+            <button 
               type="submit"
-              className="px-6 py-3 bg-[#4ade80] text-black font-black uppercase border-4 border-black shadow-[3px_3px_0_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex items-center gap-1 cursor-pointer"
+              className="px-6 py-2 bg-green-500 text-white border-4 border-black font-black uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-[2px_2px_0_rgba(0,0,0,1)] transition-all flex items-center gap-2"
             >
-              <Save size={16} />
-              Save
+              <Save size={18} />
+              SAVE
             </button>
-          </div>
+          </form>
           {savedSuccess && (
-            <p className="text-emerald-400 text-xs font-bold uppercase mt-2 flex items-center gap-1">
-              <CheckCircle2 size={14} /> Username updated and synced to Supabase!
+            <p className="text-green-600 font-black uppercase text-sm flex items-center gap-1">
+              <CheckCircle2 size={16} />
+              Saved successfully
             </p>
           )}
-        </form>
+        </section>
 
-        {/* Partnership Status */}
-        <div className="flex flex-col">
-          <label className="uppercase font-black text-xs mb-2 text-gray-400">Partnership Status</label>
-          <div className="bg-[#1a1a2e] border-4 border-black p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <span className={`font-black uppercase block text-sm sm:text-base ${user.partnerCode ? 'text-green-400' : 'text-yellow-400'}`}>
-                {user.partnerCode ? `PAIRED WITH: ${user.partnerName || user.partnerCode}` : 'UNPAIRED'}
-              </span>
-              {user.partnerEmail && (
-                <span className="text-[11px] font-mono text-gray-400 block mt-0.5">
-                  Partner Email: <strong className="text-gray-200">{user.partnerEmail}</strong>
-                </span>
-              )}
-              {user.partnerStreak !== undefined && (
-                <span className="text-[11px] font-mono text-amber-400 block mt-0.5 font-bold">
-                  Partner Streak: {user.partnerStreak} days
-                </span>
-              )}
-            </div>
-            {user.partnerCode && (
-              <button 
-                onClick={() => {
-                  retroAudio.playButtonClick();
-                  onUnpair();
-                }}
-                className="px-4 py-2 bg-red-600 text-black font-black uppercase border-2 border-black hover:bg-red-500 shadow-[2px_2px_0_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
-              >
-                Unlink Partner
-              </button>
-            )}
+        {/* Audio Settings */}
+        <section className="space-y-4">
+          <h3 className="text-xl font-black uppercase text-black border-b-4 border-dashed border-black pb-2">Audio</h3>
+          <button 
+            onClick={handleToggleSound}
+            className={`px-6 py-3 border-4 border-black font-black uppercase flex items-center gap-3 shadow-[4px_4px_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all ${
+              isMuted ? 'bg-red-500 text-white' : 'bg-cyan-400 text-black'
+            }`}
+          >
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            {isMuted ? 'SOUND: OFF' : 'SOUND: ON'}
+          </button>
+        </section>
+
+        {/* System & Connection Status */}
+        <section className="space-y-4">
+          <h3 className="text-xl font-black uppercase text-black border-b-4 border-dashed border-black pb-2">System</h3>
+          <div className="bg-gray-100 border-4 border-black p-4 text-sm font-vt323 space-y-2">
+            <p className="text-gray-500 font-bold">CLOUD_SYNC: <span className="text-green-600 font-black">ONLINE (SUPABASE)</span></p>
+            <p className="text-gray-500 font-bold">ASSETS: <span className="text-black">CDN / CLOUD STORAGE</span></p>
+            <p className="text-gray-500 font-bold">APP_VERSION: <span className="text-black">1.1.0</span></p>
+            <p className="text-gray-500 font-bold">PAIRING_CODE: <span className="text-black">{user.pairingCode}</span></p>
           </div>
-        </div>
+        </section>
 
-        {/* Logout & Reset Buttons */}
-        <div className="pt-6 border-t-4 border-black space-y-4">
-          <button 
-            onClick={() => {
-              retroAudio.playButtonClick();
-              onLogout();
-            }}
-            className="w-full py-3 bg-yellow-400 text-black border-4 border-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <LogOut size={18} />
-            Log Out
-          </button>
+        {/* Danger Zone */}
+        <section className="space-y-4 pt-8">
+          <h3 className="text-xl font-black uppercase text-red-500 border-b-4 border-dashed border-red-500 pb-2">Danger Zone</h3>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <button 
+              onClick={() => {
+                retroAudio.playError();
+                if(window.confirm('Are you sure you want to sign out?')) onLogout();
+              }}
+              className="flex-1 px-6 py-3 bg-black text-white border-4 border-black font-black uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              SIGN OUT
+            </button>
+            <button 
+              onClick={() => {
+                retroAudio.playError();
+                if(window.confirm('WARNING: This will permanently delete your account data. Proceed?')) onResetData();
+              }}
+              className="flex-1 px-6 py-3 bg-red-600 text-white border-4 border-black font-black uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center gap-2"
+            >
+              <Database size={18} />
+              DELETE ACCOUNT
+            </button>
+          </div>
+        </section>
 
-          <button 
-            onClick={() => {
-              retroAudio.playButtonClick();
-              onResetData();
-            }}
-            className="w-full py-3 bg-red-600 text-black border-4 border-black font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all cursor-pointer"
-          >
-            Purge Memory (Reset Local Data)
-          </button>
-        </div>
-
-        {/* Credits */}
-        <div className="pt-8 text-center text-xs font-mono text-gray-500 flex flex-col items-center gap-1">
-          <p>Created by Karan chaudhary</p>
-          <a href="https://www.linkedin.com/in/karanchaudhary-dev/" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:text-pink-300 underline underline-offset-2 font-bold">
-            LinkedIn
-          </a>
-          <p className="mt-2 text-[10px] uppercase">© {new Date().getFullYear()} All Copyright Reserved</p>
-        </div>
       </div>
     </div>
   );

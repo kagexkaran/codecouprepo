@@ -8,7 +8,7 @@ import { Settings } from './components/Settings';
 import { Couple } from './components/Couple';
 import { AuthScreen } from './components/AuthScreen';
 import { Onboarding } from './components/Onboarding';
-import { INITIAL_CARDS, PROFILE_AVATARS } from './data';
+import { INITIAL_CARDS, PROFILE_AVATARS, CARDCOUPLE_LOGO } from './data';
 import { supabase, syncUserDataToSupabase, extractUserFromAuth } from './lib/supabase';
 import { usePairingSync } from './lib/usePairingSync';
 import { LogOut, Cloud, CloudCheck, RefreshCw, Volume2, VolumeX, Flame, Heart, Mail } from 'lucide-react';
@@ -580,7 +580,9 @@ export default function App() {
       <div className="min-h-screen bg-[#222233] text-white font-mono select-none overflow-x-hidden">
         <header className="flex items-center justify-between p-6 bg-[#1a1a2e] border-b-4 border-black mb-8">
           <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0.5"><img src="https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/ICON.png" alt="Icon" className="w-full h-full object-cover" /></div>
+            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0.5 shrink-0 overflow-hidden">
+              <img src={CARDCOUPLE_LOGO} alt="CardCouple Logo" className="w-full h-full object-cover" />
+            </div>
             <h1 className="text-xl font-black uppercase tracking-tighter">CARDCOUPLE Onboarding</h1>
           </div>
           <button
@@ -605,7 +607,9 @@ export default function App() {
       <header className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 bg-[#1a1a2e] border-b-4 border-black mb-6 gap-4">
         <div className="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[3px_3px_0_rgba(0,0,0,1)] p-0.5"><img src="https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/ICON.png" alt="Icon" className="w-full h-full object-cover" /></div>
+            <div className="w-10 h-10 bg-pink-500 border-4 border-black flex items-center justify-center text-xl font-bold text-black shadow-[3px_3px_0_rgba(0,0,0,1)] p-0.5 shrink-0 overflow-hidden">
+              <img src={CARDCOUPLE_LOGO} alt="CardCouple Logo" className="w-full h-full object-cover" />
+            </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">CARDCOUPLE</h1>
               <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block sm:inline">

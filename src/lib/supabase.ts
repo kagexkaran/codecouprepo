@@ -1,14 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 import { User } from '../types';
 
-export const SUPABASE_PROJECT_ID = 'jprlwyfffibucbebkebp';
 export const SUPABASE_URL = 
   ((import.meta as any).env?.VITE_SUPABASE_URL as string) || 
-  `https://${SUPABASE_PROJECT_ID}.supabase.co`;
+  (typeof process !== 'undefined' ? (process.env?.VITE_SUPABASE_URL as string) : '') ||
+  'https://jprlwyfffibucbebkebp.supabase.co';
 
 export const SUPABASE_ANON_KEY = 
   ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string) || 
-  'sb_publishable_A_8tsUu3xob5Q4wQNNcp0A_dJFnLirA';
+  (typeof process !== 'undefined' ? (process.env?.VITE_SUPABASE_ANON_KEY as string) : '') ||
+  'placeholder-anon-key';
+
+export const SUPABASE_PROJECT_ID = (() => {
+  try {
+    return new URL(SUPABASE_URL).hostname.split('.')[0] || 'codecoup';
+  } catch {
+    return 'codecoup';
+  }
+})();
 
 export const BUCKET_NAME = 'codecoup';
 

@@ -234,8 +234,11 @@ export const RARITY_COIN_VALUES: Record<string, number> = {
   Special: 1000
 };
 
+export const CARDCOUPLE_LOGO = 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/LOGO.png';
+
 export const PROFILE_AVATARS = {
-  male: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/maleuser.png',
-  female: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/femaleuser.png'
+  male: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/Profile%20pitures09.png',
+  female: 'https://jprlwyfffibucbebkebp.supabase.co/storage/v1/object/public/codecoup/icnons/Profile%20pitures29.png'
 };
+
 

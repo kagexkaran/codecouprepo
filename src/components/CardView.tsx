@@ -95,7 +95,7 @@ export const CardView: React.FC<CardViewProps> = ({
   return (
     <>
       <div 
-        className={`relative bg-[#444455] border-4 border-black p-2 flex flex-col items-center group w-full max-w-[192px] h-[320px] text-center cursor-pointer shadow-[4px_4px_0_0_rgba(0,0,0,1)] ${liftClass} ${glowClass}`}
+        className={`relative bg-white rounded-lg border-4 border-black p-2 flex flex-col items-center group w-full max-w-[192px] h-[320px] text-center cursor-pointer shadow-[4px_4px_0_0_rgba(0,0,0,1)] ${liftClass} ${glowClass}`}
         onClick={handleCardClick}
       >
         {/* Active Effect Floating Badge */}
@@ -159,7 +159,7 @@ export const CardView: React.FC<CardViewProps> = ({
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm" onClick={handleCloseModal}>
           <div 
-            className="bg-[#222233] border-4 border-black shadow-[16px_16px_0_rgba(0,0,0,1)] max-w-md w-full h-[520px] max-h-[92vh] flex flex-col justify-between relative p-4 sm:p-5 overflow-hidden select-none"
+            className="bg-white border-4 border-black rounded-xl shadow-[16px_16px_0_rgba(0,0,0,1)] max-w-md w-full h-[520px] max-h-[92vh] flex flex-col justify-between relative p-4 sm:p-5 overflow-hidden select-none"
             onClick={e => e.stopPropagation()}
           >
             {/* Header with Slide Navigator Indicator & Close Button */}

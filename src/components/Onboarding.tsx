@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Card } from '../types';
-import { INITIAL_CARDS } from '../data';
+import { INITIAL_CARDS, PROFILE_AVATARS } from '../data';
 import { UserCheck, Sparkles, ArrowRight, Shield } from 'lucide-react';
 import { retroAudio } from '../lib/audio';
 
@@ -126,8 +126,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ user, onComplete }) => {
                 onClick={() => handleGenderSelect('male')}
                 className="p-6 bg-blue-500 border-4 border-black text-black font-black uppercase shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex flex-col items-center gap-3 group cursor-pointer"
               >
-                <div className="w-16 h-16 bg-black/10 border-2 border-black rounded-full flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                  ♂
+                <div className="w-20 h-20 bg-black border-4 border-black overflow-hidden group-hover:scale-105 transition-transform shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                  <img
+                    src={PROFILE_AVATARS.male}
+                    alt="Male Profile Avatar"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <span className="text-2xl tracking-wider">MALE</span>
                 <span className="text-[11px] bg-black text-white px-2 py-1 uppercase font-mono">
@@ -140,8 +145,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ user, onComplete }) => {
                 onClick={() => handleGenderSelect('female')}
                 className="p-6 bg-pink-500 border-4 border-black text-black font-black uppercase shadow-[6px_6px_0_0_rgba(0,0,0,1)] hover:translate-y-1 hover:shadow-none transition-all flex flex-col items-center gap-3 group cursor-pointer"
               >
-                <div className="w-16 h-16 bg-black/10 border-2 border-black rounded-full flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-                  ♀
+                <div className="w-20 h-20 bg-black border-4 border-black overflow-hidden group-hover:scale-105 transition-transform shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+                  <img
+                    src={PROFILE_AVATARS.female}
+                    alt="Female Profile Avatar"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <span className="text-2xl tracking-wider">FEMALE</span>
                 <span className="text-[11px] bg-black text-white px-2 py-1 uppercase font-mono">
